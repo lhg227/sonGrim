@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나에게 어울리는 손그림 캐릭터 추천</title>
+    <style>
+        /* CSS 영역 */
+        :root {
+            --primary-color: #fce4ec;
+            --accent-color: #ff80ab;
+            --text-color: #4a4a4a;
+        }
+
+        body {
+            font-family: 'Nanum Gothic', sans-serif;
+            background-color: #fff9fb;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            border: 2px solid var(--primary-color);
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 20px; color: #333; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+
+        #progress {
+            width: 0%;
+            height: 100%;
+            background: var(--accent-color);
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .question-box { display: none; }
+        .question-box.active { display: block; }
+
+        .question-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid var(--accent-color);
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        #result { display: none; }
+        .character-img {
+            width: 200px;
+            height: 200px;
+            background: #eee;
+            margin: 20px auto;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+        }
+        
+        .mbti-tag { color: var(--accent-color); font-weight: bold; font-size: 1.2rem; }
+        .desc { line-height: 1.6; margin: 20px 0; white-space: pre-wrap; }
+        .restart-btn { background: var(--accent-color); color: white; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <div id="intro">
+        <h1>나에게 어울리는<br>손그림 캐릭터를 추천해드려요</h1>
+        <p>16개의 질문을 통해 당신과 닮은 동물을 찾아보세요!</p>
+        <button onclick="startQuiz()" style="background: #ff80ab; color: white;">테스트 시작하기</button>
+    </div>
+
+    <div id="quiz-section" style="display: none;">
+        <div class="progress-bar"><div id="progress"></div></div>
+        <div id="questions"></div>
+    </div>
+
+    <div id="result">
+        <h2>당신과 어울리는 캐릭터는...</h2>
+        <div id="char-img" class="character-img"></div>
+        <div id="char-mbti" class="mbti-tag"></div>
+        <div id="char-name" style="font-size: 1.5rem; font-weight: bold;"></div>
+        <div id="char-desc" class="desc"></div>
+        <button class="restart-btn" onclick="location.reload()">다시 하기</button>
+    </div>
+</div>
+
+<script>
+    /* 스크립트 영역 */
+    const questions = [
+        // E (1) vs I (0)
+        { q: "주말에 집에 혼자 있으면?", a: "기운이 빠진다 (E)", b: "에너지가 충전된다 (I)", type: "EI" },
+        { q: "새로운 사람들과 만나는 자리는?", a: "즐겁고 설렌다 (E)", b: "빨리 집에 가고 싶다 (I)", type: "EI" },
+        { q: "생각을 표현할 때 더 편한 쪽은?", a: "말로 하는 대화 (E)", b: "글로 쓰는 메시지 (I)", type: "EI" },
+        { q: "팀 프로젝트를 할 때 나는?", a: "의견을 적극적으로 낸다 (E)", b: "주로 듣고 정리한다 (I)", type: "EI" },
+        
+        // S (1) vs N (0)
+        { q: "사과를 보면 드는 생각은?", a: "빨갛고 맛나겠다 (S)", b: "백설공주나 뉴턴이 생각난다 (N)", type: "SN" },
+        { q: "무언가를 배울 때 나는?", a: "직접 해보는 게 빠르다 (S)", b: "원리를 이해하는 게 중요하다 (N)", type: "SN" },
+        { q: "설명서를 읽을 때?", a: "꼼꼼하게 다 읽어본다 (S)", b: "대충 훑고 바로 시작한다 (N)", type: "SN" },
+        { q: "미래에 대한 생각은?", a: "현실적인 계획이 우선이다 (S)", b: "다양한 상상을 즐긴다 (N)", type: "SN" },
+
+        // T (1) vs F (0)
+        { q: "친구가 고민을 털어놓는다면?", a: "해결책을 제시해준다 (T)", b: "마음을 먼저 공감해준다 (F)", type: "TF" },
+        { q: "영화를 볼 때 더 신경 쓰이는 건?", a: "스토리의 개연성 (T)", b: "등장인물의 감정선 (F)", type: "TF" },
+        { q: "비판을 들었을 때 반응은?", a: "내용이 맞는지 따져본다 (T)", b: "서운함이 먼저 밀려온다 (F)", type: "TF" },
+        { q: "결정을 내릴 때 기준은?", a: "객관적인 데이터와 사실 (T)", b: "주변 사람들과의 관계 (F)", type: "TF" },
+
+        // J (1) vs P (0)
+        { q: "여행을 갈 때 나는?", a: "시간별로 계획을 짠다 (J)", b: "발길 닿는 대로 다닌다 (P)", type: "JP" },
+        { q: "과제가 주어졌을 때?", a: "미리미리 해둔다 (J)", b: "미루다 마감 직전에 한다 (P)", type: "JP" },
+        { q: "정리정돈 상태는?", a: "제자리에 있어야 마음이 편하다 (J)", b: "어질러져 있어도 찾는 데 문제없다 (P)", type: "JP" },
+        { q: "예상치 못한 약속이 생기면?", a: "계획이 틀어져서 당황스럽다 (J)", b: "오히려 좋아! 재밌겠다 (P)", type: "JP" }
+    ];
+
+    let currentIdx = 0;
+    let scores = { EI: 0, SN: 0, TF: 0, JP: 0 };
+
+    const characters = {
+        "ISTJ": { name: "성실한 쥐", emoji: "🐭", desc: "매사에 철저하고 규칙을 잘 지키는 당신!\n작은 일도 소홀히 하지 않는 꼼꼼함이 매력이에요." },
+        "INTJ": { name: "전략적인 황소", emoji: "🐂", desc: "독립적이고 분석력이 뛰어난 당신!\n한번 결심하면 목표를 향해 묵묵히 나아가는 우직함이 있어요." },
+        "ESTJ": { name: "추진력 대장 호랑이", emoji: "🐯", desc: "결단력 있고 리더십이 강한 당신!\n주변 사람들을 이끌어 목표를 달성하는 능력이 탁월해요." },
+        "ENTJ": { name: "야망 있는 사자", emoji: "🦁", desc: "장기적인 안목으로 계획을 세우는 당신!\n자신감 넘치는 모습이 모두의 시선을 사로잡네요." },
+        "ISTP": { name: "재주꾼 고양이", emoji: "🐱", desc: "조용하지만 관찰력이 날카로운 당신!\n필요할 때 발휘되는 순발력과 손재주가 놀라워요." },
+        "ISFJ": { name: "다정한 강아지", emoji: "🐶", desc: "책임감 강하고 헌신적인 당신!\n주변 사람들을 세심하게 챙기는 따뜻한 마음씨를 가졌군요." },
+        "ISFP": { name: "예술가 토끼", emoji: "🐰", desc: "온화하고 감수성이 풍부한 당신!\n자신만의 속도로 아름다운 세상을 그려나가는 분이에요." },
+        "INFP": { name: "꿈꾸는 유니콘", emoji: "🦄", desc: "이상주의적이고 신념이 강한 당신!\n깊은 내면 세계와 창의적인 생각이 정말 멋져요." },
+        "INFJ": { name: "지혜로운 부엉이", emoji: "🦉", desc: "통찰력이 뛰어나고 생각이 깊은 당신!\n사람들의 마음을 읽고 도와주는 신비로운 에너지가 있어요." },
+        "ESTP": { name: "활동적인 치타", emoji: "🐆", desc: "에너지가 넘치고 모험을 즐기는 당신!\n어떤 상황에서도 적응을 잘하는 행동파군요." },
+        "ESFP": { name: "분위기 메이커 돌고래", emoji: "🐬", desc: "사교적이고 낙천적인 당신!\n당신이 가는 곳 어디든 웃음꽃이 피어나는 마법을 부려요." },
+        "ENFP": { name: "발랄한 판다", emoji: "🐼", desc: "상상력이 풍부하고 열정적인 당신!\n새로운 가능성을 찾아내는 당신은 자유로운 영혼의 소유자!" },
+        "ENTP": { name: "똑똑한 여우", emoji: "🦊", desc: "두뇌 회전이 빠르고 논쟁을 즐기는 당신!\n새로운 아이디어가 끊이지 않는 발명가 타입이에요." },
+        "ESFJ": { name: "친절한 사슴", emoji: "🦌", desc: "협력적이고 조화를 중요시하는 당신!\n타인의 기쁨을 나의 기쁨으로 여기는 따뜻한 리더네요." },
+        "ENFJ": { name: "이타적인 코끼리", emoji: "🐘", desc: "타인의 성장을 돕고 격려하는 당신!\n모두를 아우르는 포용력과 카리스마를 겸비했군요." },
+        "INTP": { name: "사색하는 너구리", emoji: "🦝", desc: "논리적이고 호기심이 많은 당신!\n복잡한 문제를 해결하는 즐거움을 아는 지적인 탐구자입니다." }
+    };
+
+    function startQuiz() {
+        document.getElementById('intro').style.display = 'none';
+        document.getElementById('quiz-section').style.display = 'block';
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const qSection = document.getElementById('questions');
+        qSection.innerHTML = '';
+        
+        const q = questions[currentIdx];
+        const div = document.createElement('div');
+        div.className = 'question-box active';
+        div.innerHTML = `
+            <div class="question-text">Q${currentIdx + 1}. ${q.q}</div>
+            <button onclick="selectAnswer(1)">${q.a}</button>
+            <button onclick="selectAnswer(0)">${q.b}</button>
+        `;
+        qSection.appendChild(div);
+        
+        document.getElementById('progress').style.width = (currentIdx / questions.length) * 100 + '%';
+    }
+
+    function selectAnswer(val) {
+        const type = questions[currentIdx].type;
+        scores[type] += val;
+
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            showQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('quiz-section').style.display = 'none';
+        document.getElementById('result').style.display = 'block';
+
+        // 4문제 중 2문제 이상 선택 시 해당 특성 부여 (다수결)
+        let mbti = "";
+        mbti += scores.EI >= 2 ? "E" : "I";
+        mbti += scores.SN >= 2 ? "S" : "N";
+        mbti += scores.TF >= 2 ? "T" : "F";
+        mbti += scores.JP >= 2 ? "J" : "P";
+
+        const char = characters[mbti] || characters["ISTJ"];
+        
+        document.getElementById('char-img').innerText = char.emoji;
+        document.getElementById('char-mbti').innerText = mbti;
+        document.getElementById('char-name').innerText = char.name;
+        document.getElementById('char-desc').innerText = char.desc;
+    }
+</script>
+
+</body>
+</html>
