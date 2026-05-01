@@ -2,47 +2,81 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <!-- 모바일 기기에 꽉 차게 렌더링되도록 뷰포트 설정 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>아롱다롱카페</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background-color: #f9f9f9; padding: 20px; }
-        h1 { color: #5d4037; }
-        
-        /* 메뉴판 스타일 */
-        .menu-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
-        .menu-item { 
-            padding: 15px 25px; background: white; border: 2px solid #d7ccc8; border-radius: 10px;
-            cursor: pointer; transition: transform 0.2s;
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; background-color: #fefcfb; 
+            margin: 0; padding: 20px 15px; min-height: 100vh; display: flex; flex-direction: column;
         }
-        .menu-item:hover { transform: scale(1.05); background: #efebe9; }
+        h1 { color: #5d4037; font-size: 1.8rem; margin: 10px 0 20px 0; }
+        
+        /* 모바일 반응형 메뉴판 */
+        .menu-container { 
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%;
+        }
+        .menu-item { 
+            flex: 1 1 calc(33.333% - 10px); min-width: 90px;
+            padding: 15px 5px; background: white; border: 2px solid #d7ccc8; border-radius: 12px;
+            cursor: pointer; font-size: 0.95rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.1s, background-color 0.1s; color: #4e342e; line-height: 1.4;
+        }
+        /* 모바일 터치 효과 */
+        .menu-item:active { transform: scale(0.95); background: #efebe9; }
+        .price { font-size: 0.8rem; color: #795548; font-weight: normal; }
 
-        /* 컵 및 애니메이션 */
-        #cafe-area { position: relative; height: 300px; margin-top: 50px; display: flex; flex-direction: column; align-items: center; }
+        /* 컵 및 애니메이션 영역 (화면 중앙에 꽉 차게) */
+        #cafe-area { 
+            position: relative; flex-grow: 1; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; margin: 30px 0;
+        }
         .cup { 
-            width: 120px; height: 150px; border: 4px solid #5d4037; border-top: none;
-            border-radius: 0 0 40px 40px; position: relative; overflow: hidden; background: white;
+            width: 150px; height: 200px; border: 6px solid #5d4037; border-top: none;
+            border-radius: 0 0 60px 60px; position: relative; overflow: hidden; background: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
         .liquid { 
             position: absolute; bottom: 0; width: 100%; height: 0%; 
-            transition: height 1s ease-in-out; 
+            transition: height 0.5s ease-in-out; /* 액체가 차오르는 시간 0.5초 */
         }
         
         /* 라떼아트(꿀그림) & 액세서리 */
         .art-layer { 
-            position: absolute; top: 20%; width: 100%; text-align: center; 
-            font-size: 40px; opacity: 0; transition: opacity 0.5s; color: #FFD700; /* 금색 */
-            text-shadow: 1px 1px 2px #b8860b;
+            position: absolute; top: 15%; width: 100%; text-align: center; 
+            font-size: 55px; opacity: 0; transition: opacity 0.5s; color: #FFD700;
+            text-shadow: 1px 1px 3px rgba(184, 134, 11, 0.5);
         }
-        .accessory { position: absolute; top: -15px; right: 20px; font-size: 20px; }
+        .accessory { position: absolute; top: -15px; right: 25px; font-size: 25px; }
 
-        /* 결과 모달 */
-        #modal { 
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: white; padding: 30px; border-radius: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 10;
+        /* 결과 모달 (모바일 화면 덮기) */
+        #modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 100;
         }
-        button#reset-btn { margin-top: 15px; padding: 10px 20px; cursor: pointer; border-radius: 5px; border: none; background: #5d4037; color: white; }
+        .modal-content {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 30px 20px; border-radius: 20px; 
+            width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-content h2 { margin: 0 0 10px 0; color: #5d4037; font-size: 1.5rem; word-break: keep-all; }
+        .beverage-name { 
+            display: inline-block; padding: 5px 15px; border-radius: 20px; 
+            font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; color: #fff;
+        }
+        
+        button#reset-btn { 
+            width: 100%; padding: 15px; font-size: 1.2rem; font-weight: bold; cursor: pointer; 
+            border-radius: 12px; border: none; background: #5d4037; color: white; margin-top: 15px;
+        }
 
-        /* 하단 정보 */
-        #total-money { position: fixed; bottom: 20px; right: 20px; font-weight: bold; font-size: 1.2rem; background: #fff; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        /* 하단 정보 고정 */
+        #total-money { 
+            position: fixed; bottom: 20px; right: 20px; font-weight: bold; font-size: 1.1rem; 
+            background: rgba(255, 255, 255, 0.95); padding: 12px 20px; border-radius: 30px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 2px solid #d7ccc8; color: #4e342e; z-index: 50;
+        }
     </style>
 </head>
 <body>
@@ -50,9 +84,16 @@
     <h1>☕ 아롱다롱카페</h1>
 
     <div class="menu-container">
-        <div class="menu-item" onclick="order('카페라떼', 1000, '#D2B48C')">카페라떼<br>1,000원</div>
-        <div class="menu-item" onclick="order('레몬에이드', 1500, '#FFFACD')">레몬에이드<br>1,500원</div>
-        <div class="menu-item" onclick="order('녹차라떼', 2000, '#98FB98')">녹차라떼<br>2,000원</div>
+        <!-- 터치 시 색상, 이름, 가격 전달 -->
+        <div class="menu-item" onclick="order('카페라떼', 1000, '#D2B48C', '#8D6E63')">
+            카페라떼<br><span class="price">1,000원</span>
+        </div>
+        <div class="menu-item" onclick="order('레몬에이드', 1500, '#FFFACD', '#FBC02D')">
+            레몬에이드<br><span class="price">1,500원</span>
+        </div>
+        <div class="menu-item" onclick="order('녹차라떼', 2000, '#98FB98', '#66BB6A')">
+            녹차라떼<br><span class="price">2,000원</span>
+        </div>
     </div>
 
     <div id="cafe-area">
@@ -67,20 +108,26 @@
 
     <div id="total-money">번 돈: <span id="money">0</span>원</div>
 
-    <!-- 완성 모달 -->
-    <div id="modal">
-        <h2 id="modal-msg">완성되었어요!</h2>
-        <div id="final-display" style="font-size: 50px; margin: 20px 0;"></div>
-        <button id="reset-btn" onclick="resetCafe()">완료</button>
+    <!-- 완성 모달 오버레이 -->
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <div id="bev-badge" class="beverage-name"></div>
+            <h2>완성되었어요!</h2>
+            <div id="final-display" style="font-size: 60px; margin: 20px 0; position: relative;"></div>
+            <button id="reset-btn" onclick="resetCafe()">완료</button>
+        </div>
     </div>
 
     <script>
         let totalMoney = 0;
+        let isMaking = false; // 음료 제작 중 중복 터치 방지
         const arts = ['🐶', '🐱', '❤️', '🐰'];
-        const accessories = ['🌸', '⭐', '👓', '✨'];
+        const accessories = ['🌺', '🌟', '🕶️', '💎']; // 꽃머리핀, 별, 안경, 귀걸이(보석)
 
-        function order(name, price, color) {
-            // 버튼 중복 클릭 방지 위해 메뉴판 잠시 비활성화 가능하지만 생략(심플화)
+        function order(name, price, liquidColor, badgeColor) {
+            if (isMaking) return; // 이미 만들고 있다면 무시
+            isMaking = true;
+            
             const liquid = document.getElementById('liquid');
             const artLayer = document.getElementById('art-layer');
             const artIcon = document.getElementById('art-icon');
@@ -90,11 +137,11 @@
             totalMoney += price;
             document.getElementById('money').innerText = totalMoney.toLocaleString();
 
-            // 2. 음료 채우기 애니메이션
-            liquid.style.backgroundColor = color;
+            // 2. 음료 채우기 (0.5초 애니메이션)
+            liquid.style.backgroundColor = liquidColor;
             liquid.style.height = '90%';
 
-            // 3. 0.5초 딜레이 후 꿀그림(라떼아트) 등장
+            // 3. 차오른 후(0.5초) + 딜레이(0.5초) = 총 1초 뒤에 꿀그림 등장
             setTimeout(() => {
                 const randomArt = arts[Math.floor(Math.random() * arts.length)];
                 const randomAcc = accessories[Math.floor(Math.random() * accessories.length)];
@@ -103,26 +150,39 @@
                 accIcon.innerText = randomAcc;
                 artLayer.style.opacity = '1';
 
-                // 4. 완성 후 0.5초 딜레이 후 모달 표시
+                // 4. 꿀그림 등장 후 0.5초 딜레이 뒤 모달 창 띄우기
                 setTimeout(() => {
-                    showModal(name, randomArt, randomAcc);
+                    showModal(name, randomArt, randomAcc, badgeColor);
                 }, 500);
                 
-            }, 1000); // 채워지는 애니메이션 1초 고려
+            }, 1000); 
         }
 
-        function showModal(name, art, acc) {
-            const modal = document.getElementById('modal');
+        function showModal(name, art, acc, badgeColor) {
+            const overlay = document.getElementById('modal-overlay');
+            const badge = document.getElementById('bev-badge');
             const display = document.getElementById('final-display');
-            display.innerText = art + acc;
-            modal.style.display = 'block';
+            
+            // 모달에 음료 이름과 테마 색상 적용
+            badge.innerText = name;
+            badge.style.backgroundColor = badgeColor;
+            
+            // 완성된 아트 표시
+            display.innerHTML = `${art}<span style="position:absolute; top:-10px; right:110px; font-size:30px;">${acc}</span>`;
+            
+            overlay.style.display = 'block';
         }
 
         function resetCafe() {
-            // 초기화
-            document.getElementById('modal').style.display = 'none';
+            // 초기화 후 새 음료를 받을 수 있게 세팅
+            document.getElementById('modal-overlay').style.display = 'none';
             document.getElementById('liquid').style.height = '0%';
             document.getElementById('art-layer').style.opacity = '0';
+            
+            // 초기화 애니메이션이 끝난 후 클릭 잠금 해제
+            setTimeout(() => {
+                isMaking = false;
+            }, 300);
         }
     </script>
 </body>
