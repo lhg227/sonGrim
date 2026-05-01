@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>아롱다롱카페</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background-color: #f9f9f9; padding: 20px; }
+        h1 { color: #5d4037; }
+        
+        /* 메뉴판 스타일 */
+        .menu-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
+        .menu-item { 
+            padding: 15px 25px; background: white; border: 2px solid #d7ccc8; border-radius: 10px;
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .menu-item:hover { transform: scale(1.05); background: #efebe9; }
+
+        /* 컵 및 애니메이션 */
+        #cafe-area { position: relative; height: 300px; margin-top: 50px; display: flex; flex-direction: column; align-items: center; }
+        .cup { 
+            width: 120px; height: 150px; border: 4px solid #5d4037; border-top: none;
+            border-radius: 0 0 40px 40px; position: relative; overflow: hidden; background: white;
+        }
+        .liquid { 
+            position: absolute; bottom: 0; width: 100%; height: 0%; 
+            transition: height 1s ease-in-out; 
+        }
+        
+        /* 라떼아트(꿀그림) & 액세서리 */
+        .art-layer { 
+            position: absolute; top: 20%; width: 100%; text-align: center; 
+            font-size: 40px; opacity: 0; transition: opacity 0.5s; color: #FFD700; /* 금색 */
+            text-shadow: 1px 1px 2px #b8860b;
+        }
+        .accessory { position: absolute; top: -15px; right: 20px; font-size: 20px; }
+
+        /* 결과 모달 */
+        #modal { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 30px; border-radius: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 10;
+        }
+        button#reset-btn { margin-top: 15px; padding: 10px 20px; cursor: pointer; border-radius: 5px; border: none; background: #5d4037; color: white; }
+
+        /* 하단 정보 */
+        #total-money { position: fixed; bottom: 20px; right: 20px; font-weight: bold; font-size: 1.2rem; background: #fff; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <h1>☕ 아롱다롱카페</h1>
+
+    <div class="menu-container">
+        <div class="menu-item" onclick="order('카페라떼', 1000, '#D2B48C')">카페라떼<br>1,000원</div>
+        <div class="menu-item" onclick="order('레몬에이드', 1500, '#FFFACD')">레몬에이드<br>1,500원</div>
+        <div class="menu-item" onclick="order('녹차라떼', 2000, '#98FB98')">녹차라떼<br>2,000원</div>
+    </div>
+
+    <div id="cafe-area">
+        <div class="cup">
+            <div id="liquid" class="liquid"></div>
+            <div id="art-layer" class="art-layer">
+                <span id="art-icon"></span>
+                <span id="acc-icon" class="accessory"></span>
+            </div>
+        </div>
+    </div>
+
+    <div id="total-money">번 돈: <span id="money">0</span>원</div>
+
+    <!-- 완성 모달 -->
+    <div id="modal">
+        <h2 id="modal-msg">완성되었어요!</h2>
+        <div id="final-display" style="font-size: 50px; margin: 20px 0;"></div>
+        <button id="reset-btn" onclick="resetCafe()">완료</button>
+    </div>
+
+    <script>
+        let totalMoney = 0;
+        const arts = ['🐶', '🐱', '❤️', '🐰'];
+        const accessories = ['🌸', '⭐', '👓', '✨'];
+
+        function order(name, price, color) {
+            // 버튼 중복 클릭 방지 위해 메뉴판 잠시 비활성화 가능하지만 생략(심플화)
+            const liquid = document.getElementById('liquid');
+            const artLayer = document.getElementById('art-layer');
+            const artIcon = document.getElementById('art-icon');
+            const accIcon = document.getElementById('acc-icon');
+            
+            // 1. 돈 추가
+            totalMoney += price;
+            document.getElementById('money').innerText = totalMoney.toLocaleString();
+
+            // 2. 음료 채우기 애니메이션
+            liquid.style.backgroundColor = color;
+            liquid.style.height = '90%';
+
+            // 3. 0.5초 딜레이 후 꿀그림(라떼아트) 등장
+            setTimeout(() => {
+                const randomArt = arts[Math.floor(Math.random() * arts.length)];
+                const randomAcc = accessories[Math.floor(Math.random() * accessories.length)];
+                
+                artIcon.innerText = randomArt;
+                accIcon.innerText = randomAcc;
+                artLayer.style.opacity = '1';
+
+                // 4. 완성 후 0.5초 딜레이 후 모달 표시
+                setTimeout(() => {
+                    showModal(name, randomArt, randomAcc);
+                }, 500);
+                
+            }, 1000); // 채워지는 애니메이션 1초 고려
+        }
+
+        function showModal(name, art, acc) {
+            const modal = document.getElementById('modal');
+            const display = document.getElementById('final-display');
+            display.innerText = art + acc;
+            modal.style.display = 'block';
+        }
+
+        function resetCafe() {
+            // 초기화
+            document.getElementById('modal').style.display = 'none';
+            document.getElementById('liquid').style.height = '0%';
+            document.getElementById('art-layer').style.opacity = '0';
+        }
+    </script>
+</body>
+</html>
