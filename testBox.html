@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>바닐라 캔버스: 고양이 사냥꾼</title>
+    <style>
+        body { background-color: #1e1e1e; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+        
+        /* 🔥 1. 운영체제의 기본 마우스 커서를 캔버스 위에서 완전히 은폐(none)합니다. */
+        canvas { background-color: #000; border: 2px solid #555; cursor: none; }
+    </style>
+</head>
+<body>
+
+<canvas id="deepCanvas" width="600" height="400"></canvas>
+
+<script>
+    const canvas = document.getElementById('deepCanvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const focalLength = 300;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const numObjects = 100;
+    
+    let score = 0;
+    let mouseX = -1000;
+    let mouseY = -1000;
+
+    // 마우스 좌표 추적
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+    });
+
+    // 화면 밖으로 나가면 고양이 커서 숨기기 (안전장치)
+    canvas.addEventListener('mouseout', () => {
+        mouseX = -1000;
+        mouseY = -1000;
+    });
+
+    let objects = [];
+    for (let i = 0; i < numObjects; i++) {
+        objects.push({
+            x: (Math.random() - 0.5) * 800,
+            y: (Math.random() - 0.5) * 600,
+            z: Math.random() * 800 + 200,
+            touched: false
+        });
+    }
+
+    // 🔥 2. 고양이 마우스 커서 렌더링 함수 (순수 원과 사각형의 조합)
+    function drawCatCursor(x, y) {
+        if (x < 0 || y < 0) return; // 캔버스 밖이면 렌더링 스킵
+
+        // 색상 테마: 새하얀 래그돌 고양이 
+        // (황금빛 골든 태비 스코티시 폴드로 만들고 싶다면 '#DAA520' 으로 변경하십시오)
+        const catColor = '#FFFFFF'; 
+
+        // [귀] 2개의 사각형을 45도 회전시켜 뾰족한 귀를 만듭니다.
+        ctx.fillStyle = catColor;
+        
+        ctx.save();
+        ctx.translate(x - 10, y - 10);
+        ctx.rotate(-Math.PI / 4); // 왼쪽 귀 45도 회전
+        ctx.fillRect(-6, -6, 12, 12); 
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(x + 10, y - 10);
+        ctx.rotate(Math.PI / 4);  // 오른쪽 귀 45도 회전
+        ctx.fillRect(-6, -6, 12, 12); 
+        ctx.restore();
+
+        // [얼굴] 가장 완벽한 형태인 원형 (arc)
+        ctx.beginPath();
+        ctx.arc(x, y, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // [눈] 검은색 바탕 눈 (작은 원)
+        ctx.fillStyle = '#333333';
+        ctx.beginPath();
+        ctx.arc(x - 6, y - 2, 4, 0, Math.PI * 2); // 왼쪽 눈
+        ctx.arc(x + 6, y - 2, 4, 0, Math.PI * 2); // 오른쪽 눈
+        ctx.fill();
+
+        // [눈동자] 반짝이는 하얀색 눈동자 (더 작은 원)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(x - 6, y - 3, 1.5, 0, Math.PI * 2);
+        ctx.arc(x + 6, y - 3, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // [코] 아주 작은 사각형으로 표현한 귀여운 코
+        ctx.fillStyle = '#FFA07A'; // 연분홍색
+        ctx.fillRect(x - 2, y + 4, 4, 3);
+    }
+
+    function draw() {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, width, height);
+
+        objects.sort((a, b) => b.z - a.z);
+
+        for (let i = 0; i < objects.length; i++) {
+            let obj = objects[i];
+            obj.z -= 4;
+
+            if (obj.z < focalLength) {
+                obj.z = 1000;
+                obj.x = (Math.random() - 0.5) * 800;
+                obj.y = (Math.random() - 0.5) * 600;
+                obj.touched = false;
+            }
+
+            let scale = focalLength / (focalLength + obj.z);
+            let projectedX = centerX + (obj.x * scale);
+            let projectedY = centerY + (obj.y * scale);
+            let size = scale * 50;
+            let alpha = Math.min(1, scale * 3);
+
+            let leftEdge = projectedX - size/2;
+            let rightEdge = projectedX + size/2;
+            let topEdge = projectedY - size/2;
+            let bottomEdge = projectedY + size/2;
+
+            // 충돌 판정
+            if (!obj.touched && mouseX >= leftEdge && mouseX <= rightEdge && mouseY >= topEdge && mouseY <= bottomEdge) {
+                obj.touched = true;
+                score += 1;
+            }
+
+            if (obj.touched) {
+                ctx.fillStyle = `rgba(255, 50, 50, ${alpha})`;
+                ctx.strokeStyle = `rgba(255, 150, 150, ${alpha * 0.8})`;
+            } else {
+                ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
+                ctx.strokeStyle = `rgba(150, 255, 150, ${alpha * 0.5})`;
+            }
+
+            ctx.lineWidth = 1;
+            ctx.fillRect(leftEdge, topEdge, size, size);
+            ctx.strokeRect(leftEdge, topEdge, size, size);
+        }
+
+        // 스코어 출력
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 24px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Score: ${score}`, width / 2, 40);
+
+        // 🔥 3. 최상단 UI 레이어: 렌더링이 다 끝난 화면 가장 위에 마우스 커서를 덮어씌웁니다.
+        drawCatCursor(mouseX, mouseY);
+
+        requestAnimationFrame(draw);
+    }
+
+    requestAnimationFrame(draw);
+</script>
+</body>
+</html>
