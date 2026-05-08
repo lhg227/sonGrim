@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>어버이날 감사합니다 🌺</title>
+<style>
+  :root {
+    --primary-color: #d32f2f;
+    --bg-color: #fff0f2;
+    --text-color: #333;
+  }
+  
+  body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+
+  /* 1. 기하학적 무늬 CSS 애니메이션 배경 */
+  .bg-shapes {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+  }
+  
+  .shape {
+    position: absolute;
+    opacity: 0.5;
+    animation: float 20s infinite ease-in-out alternate;
+  }
+  
+  .shape-1 {
+    width: 350px; height: 350px;
+    background: linear-gradient(45deg, #ffcdd2, #f8bbd0);
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+    top: -10%; left: -10%;
+    animation-duration: 25s;
+  }
+  
+  .shape-2 {
+    width: 250px; height: 250px;
+    background: linear-gradient(135deg, #ffe082, #ffcc80);
+    border-radius: 50% 50% 30% 70% / 60% 40% 70% 40%;
+    bottom: 5%; right: -5%;
+    animation-duration: 18s;
+  }
+  
+  .shape-3 {
+    width: 120px; height: 120px;
+    border: 6px solid #ef9a9a;
+    border-radius: 50%;
+    top: 40%; left: 80%;
+    animation: float-rotate 15s infinite linear;
+  }
+  
+  .shape-4 {
+    width: 0; height: 0;
+    border-left: 50px solid transparent;
+    border-right: 50px solid transparent;
+    border-bottom: 90px solid rgba(244, 143, 177, 0.4);
+    top: 70%; left: 15%;
+    animation: float-rotate-reverse 22s infinite linear;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0) scale(1); }
+    100% { transform: translateY(-40px) scale(1.05); }
+  }
+  @keyframes float-rotate {
+    0% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(-80px) rotate(360deg); }
+  }
+  @keyframes float-rotate-reverse {
+    0% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(-60px) rotate(-360deg); }
+  }
+
+  /* 2. 레이아웃 및 섹션 설정 */
+  .section {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  #carnation-container {
+    margin-bottom: 20px;
+    filter: drop-shadow(0px 10px 10px rgba(0,0,0,0.1));
+  }
+
+  /* 3. 타이포그래피 */
+  h1 {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    word-break: keep-all;
+    line-height: 1.3;
+  }
+  
+  h2 {
+    font-size: 1.8rem;
+    color: #c62828;
+    margin-bottom: 20px;
+    word-break: keep-all;
+  }
+
+  p {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin: 10px 0;
+    word-break: keep-all;
+    color: #444;
+  }
+
+  .scroll-hint {
+    font-size: 1rem;
+    color: #888;
+    margin-top: 40px;
+    animation: bounce 2s infinite;
+  }
+
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-15px); }
+    60% { transform: translateY(-7px); }
+  }
+
+  /* 4. 스크롤 애니메이션 효과 클래스 */
+  .reveal {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .signature {
+    margin-top: 50px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--primary-color);
+  }
+
+  /* 모바일 반응형 처리 */
+  @media (max-width: 600px) {
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.5rem; }
+    p { font-size: 1.1rem; }
+    canvas { width: 250px; height: 300px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 기하학적 배경 요소 -->
+<div class="bg-shapes">
+  <div class="shape shape-1"></div>
+  <div class="shape shape-2"></div>
+  <div class="shape shape-3"></div>
+  <div class="shape shape-4"></div>
+</div>
+
+<!-- 첫 번째 화면: 캔버스 카네이션과 타이틀 -->
+<header class="section">
+  <div id="carnation-container">
+    <canvas id="carnationCanvas" width="300" height="350"></canvas>
+  </div>
+  <h1 class="reveal">어버이날 감사합니다 🌺</h1>
+  <p class="scroll-hint reveal">아래로 스크롤 해주세요 ↓</p>
+</header>
+
+<!-- 스크롤 섹션 1 -->
+<section class="section">
+  <h2 class="reveal">낳으시고 길러주신 크신 은혜</h2>
+  <p class="reveal">언제나 변함없는 따뜻한 사랑으로<br>저를 넓은 품에 안아주셔서 진심으로 감사합니다. 🌷</p>
+</section>
+
+<!-- 스크롤 섹션 2 -->
+<section class="section">
+  <p class="reveal">두 분의 희생과 깊은 보살핌 덕분에<br>지금의 든든한 제가 있을 수 있었습니다.</p>
+  <p class="reveal">항상 받기만 했던 그 큰 사랑,<br>앞으로 살아가며 하나씩 보답해 나가겠습니다. 🌸</p>
+</section>
+
+<!-- 스크롤 섹션 3 -->
+<section class="section">
+  <p class="reveal">각자의 삶이 바쁘다는 핑계로 더 자주<br>찾아뵙지 못해 늘 죄송한 마음뿐입니다.</p>
+  <p class="reveal">앞으로는 더 자주 연락드리고<br>웃음을 드리는 든든한 자녀가 되겠습니다. 🌺</p>
+</section>
+
+<!-- 마지막 화면 -->
+<section class="section">
+  <h1 class="reveal">사랑합니다, 그리고 존경합니다.</h1>
+  <p class="reveal">사랑하는 엄마 아빠,<br>항상 아프지 마시고 건강하셔요. 🌷</p>
+  <p class="reveal signature">사랑을 듬뿍 담아, 화이팅</p>
+</section>
+
+<script>
+  /* 1. 스크롤 위치에 따른 텍스트 등장 애니메이션 (Intersection Observer API) */
+  const reveals = document.querySelectorAll('.reveal');
+  const observerOptions = {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0.25
+  };
+
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('active');
+      } else {
+        // 스크롤을 올렸을 때 다시 애니메이션을 보기 위해 active 클래스 제거
+        entry.target.classList.remove('active');
+      }
+    });
+  }, observerOptions);
+
+  reveals.forEach(reveal => {
+    revealObserver.observe(reveal);
+  });
+
+  // 로드 시 화면에 바로 보이는 요소들 강제 활성화
+  setTimeout(() => {
+    reveals.forEach(reveal => {
+      const rect = reveal.getBoundingClientRect();
+      if(rect.top < window.innerHeight) {
+        reveal.classList.add('active');
+      }
+    });
+  }, 150);
+
+
+  /* 2. HTML5 Canvas를 이용한 카네이션 그리기 알고리즘 */
+  const canvas = document.getElementById('carnationCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  // 모바일을 위해 캔버스 비율 재조정
+  const width = canvas.width;
+  const height = canvas.height;
+  const cx = width / 2;
+  const cy = height / 2 - 40;
+
+  function drawCarnation() {
+    ctx.clearRect(0, 0, width, height);
+
+    // 줄기 그리기
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 40);
+    ctx.quadraticCurveTo(cx - 20, cy + 120, cx + 15, cy + 200);
+    ctx.strokeStyle = '#2e7d32';
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // 잎사귀 그리기 (좌/우)
+    ctx.fillStyle = '#4caf50';
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, cy + 100);
+    ctx.quadraticCurveTo(cx - 60, cy + 70, cx - 75, cy + 110);
+    ctx.quadraticCurveTo(cx - 40, cy + 130, cx - 10, cy + 120);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, cy + 140);
+    ctx.quadraticCurveTo(cx + 60, cy + 110, cx + 70, cy + 150);
+    ctx.quadraticCurveTo(cx + 40, cy + 180, cx + 12, cy + 160);
+    ctx.fill();
+
+    // 꽃받침 그리기
+    ctx.fillStyle = '#1b5e20';
+    ctx.beginPath();
+    ctx.moveTo(cx - 18, cy + 30);
+    ctx.lineTo(cx + 18, cy + 30);
+    ctx.lineTo(cx + 20, cy + 50);
+    ctx.lineTo(cx, cy + 65);
+    ctx.lineTo(cx - 20, cy + 50);
+    ctx.closePath();
+    ctx.fill();
+
+    // 풍성한 카네이션 꽃잎 그리기 (수학적 곡선 활용)
+    const petalColors = ['#b71c1c', '#c62828', '#d32f2f', '#e53935', '#ff5252'];
+    
+    // 바깥쪽 넓은 꽃잎들
+    for(let i = 0; i < 45; i++) {
+      // 반원 위주로 퍼지도록 각도 계산
+      let angle = Math.PI + (i * 0.16) + (Math.sin(i) * 0.4); 
+      if(angle > Math.PI * 2) angle -= Math.PI;
+      
+      let radius = 65 + Math.sin(i * 3.14) * 15;
+      let pX = cx + Math.cos(angle) * radius;
+      let pY = cy + Math.sin(angle) * (radius * 0.7); // 위아래로 살짝 납작하게
+
+      let cp1X = cx + Math.cos(angle - 0.25) * (radius * 0.6);
+      let cp1Y = cy + Math.sin(angle - 0.25) * (radius * 0.6);
+      
+      let cp2X = cx + Math.cos(angle + 0.25) * (radius * 0.8);
+      let cp2Y = cy + Math.sin(angle + 0.25) * (radius * 0.8);
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + 40);
+      ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, pX, pY);
+      
+      // 꽃잎 끝이 갈라지는 지그재그 효과
+      ctx.lineTo(pX - 6, pY + 4);
+      ctx.lineTo(pX + 2, pY + 8);
+      ctx.lineTo(cx, cy + 40);
+      
+      ctx.fillStyle = petalColors[i % petalColors.length];
+      ctx.fill();
+      
+      ctx.strokeStyle = '#880e4f';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+    
+    // 안쪽 조밀한 꽃잎들
+    for(let i = 0; i < 30; i++) {
+      let angle = Math.PI + (i * 0.25); 
+      let radius = 40 + Math.cos(i * 5) * 15;
+      let pX = cx + Math.cos(angle) * radius;
+      let pY = cy + 10 + Math.sin(angle) * (radius * 0.7);
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + 30);
+      ctx.quadraticCurveTo(cx + Math.cos(angle - 0.3)*25, cy + Math.sin(angle - 0.3)*25, pX, pY);
+      ctx.lineTo(pX - 4, pY + 3);
+      ctx.lineTo(cx, cy + 30);
+      
+      // 안쪽은 약간 밝고 부드러운 색상 교차
+      ctx.fillStyle = i % 2 === 0 ? '#ff8a80' : '#ef5350';
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  // 브라우저 렌더링 최적화를 위한 지연 그리기
+  window.onload = () => {
+    drawCarnation();
+  };
+</script>
+</body>
+</html>
