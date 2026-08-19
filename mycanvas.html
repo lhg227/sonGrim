@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>myCanvas</title>
+<style>
+  :root{
+    --ink:#252525; --line:#2c2c2c; --panel:#f2f2f2; --canvas:#fff;
+    --accent:#8fa5fa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#e9e9e9;font-family:Arial,"Noto Sans KR",sans-serif;color:#151515}
+  body{display:grid;place-items:center;padding:14px}
+  .phone{
+    width:min(100%,390px); min-height:680px; height:min(92vh,780px);
+    background:#fff; border:7px solid #161616; border-radius:32px;
+    box-shadow:0 2px 2px #999,0 12px 30px #999; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .status{
+    height:31px; background:#111; color:#d8f5ff; padding:6px 13px 0;
+    text-align:right; font-size:14px; line-height:20px; flex:none;
+  }
+  .appbar{height:26px; background:#646464;color:#fff;padding:5px 12px;font-size:12px;flex:none}
+  .workspace{background:#fff;border-left:1px solid #333;border-right:1px solid #333;display:flex;flex:1;min-height:0;flex-direction:column}
+  .palette, .tools, .bottom{
+    flex:none; background:var(--panel); border-bottom:1px solid var(--line);
+    padding:7px 5px; display:flex; align-items:center; gap:8px;
+  }
+  .palette{height:72px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none}
+  .palette::-webkit-scrollbar{display:none}
+  .swatch,.action,.size-label{
+    height:37px; min-width:37px; border:1.5px solid #333; border-radius:9px;
+    background:#fff; font-size:12px; cursor:pointer; touch-action:manipulation;
+    box-shadow:0 1px 0 rgba(0,0,0,.12);
+  }
+  .swatch{width:37px;padding:0;flex:none}
+  .swatch.selected{outline:3px solid #222;outline-offset:2px}
+  #random{min-width:51px;font-weight:bold;color:#3d4670}
+  .tools{height:61px;padding:10px 13px;gap:10px}
+  .size-label{border-radius:0;min-width:51px;cursor:default}
+  #size{flex:1;accent-color:var(--accent);height:16px;min-width:0}
+  .canvas-wrap{padding:6px 0 5px;display:flex;flex:1;min-height:0;background:#fff}
+  canvas{display:block;width:100%;height:100%;background:#fff;border:1px solid #222;touch-action:none;cursor:crosshair}
+  .bottom{height:59px;justify-content:center;gap:10px;border-top:1px solid #222;border-bottom:0}
+  .action{border-radius:50%;min-width:51px;width:51px;height:37px;background:#eee}
+  .action:active,.swatch:active{transform:translateY(1px)}
+  .big{font-weight:bold}
+  @media (max-width:410px){
+    body{padding:0;display:block;background:#fff}
+    .phone{width:100%;height:100dvh;min-height:0;border:0;border-radius:0;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<main class="phone" aria-label="스마트폰 낙서 앱">
+  <div class="status">▰▰▰　▱　9:48</div>
+  <header class="appbar">myCanvas</header>
+  <section class="workspace">
+    <div class="palette" id="palette" aria-label="색상 선택">
+      <button class="swatch selected" data-color="#ffffff" aria-label="흰색" style="background:#fff">color</button>
+      <button class="swatch" data-color="#ff5b5f" aria-label="빨강" style="background:#ff5b5f"></button>
+      <button class="swatch" data-color="#ffe57a" aria-label="노랑" style="background:#ffe57a"></button>
+      <button class="swatch" data-color="#c58bed" aria-label="보라" style="background:#c58bed"></button>
+      <button class="swatch" data-color="#68c78b" aria-label="초록" style="background:#68c78b"></button>
+      <button class="swatch" data-color="#69b8e9" aria-label="파랑" style="background:#69b8e9"></button>
+      <button class="swatch" data-color="#f6a7bd" aria-label="분홍" style="background:#f6a7bd"></button>
+      <button class="swatch" data-color="#f6b26b" aria-label="주황" style="background:#f6b26b"></button>
+      <button class="swatch" data-color="#85d5cf" aria-label="민트" style="background:#85d5cf"></button>
+      <button class="swatch" id="random" aria-label="랜덤 RGB 색상">랜덤</button>
+    </div>
+    <div class="tools">
+      <button class="size-label">크기</button>
+      <input id="size" type="range" min="5" max="100" value="26" aria-label="브러시 크기" />
+    </div>
+    <div class="canvas-wrap"><canvas id="paint" aria-label="그림 캔버스"></canvas></div>
+    <div class="bottom">
+      <button class="action" id="randomBottom">랜덤</button>
+      <button class="action" id="save">저장</button>
+      <button class="action big" id="big">Big</button>
+      <button class="action" id="clear">지우기</button>
+    </div>
+  </section>
+</main>
+<script>
+(() => {
+  const canvas = document.getElementById('paint'), ctx = canvas.getContext('2d');
+  const sizeInput = document.getElementById('size');
+  let color = '#ffffff', brush = +sizeInput.value, drawing = false, last = null;
+
+  function resizeCanvas() {
+    const old = document.createElement('canvas');
+    old.width = canvas.width; old.height = canvas.height;
+    if (old.width) old.getContext('2d').drawImage(canvas, 0, 0);
+    const r = canvas.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+    canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, r.width, r.height);
+    if (old.width) ctx.drawImage(old, 0, 0, old.width, old.height, 0, 0, r.width, r.height);
+  }
+  new ResizeObserver(resizeCanvas).observe(canvas);
+
+  function point(e) {
+    const r = canvas.getBoundingClientRect();
+    return {x:e.clientX-r.left, y:e.clientY-r.top};
+  }
+  function dot(p) {
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, brush/2, 0, Math.PI*2); ctx.fill();
+  }
+  function stroke(a,b) {
+    const dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy);
+    const steps=Math.max(1, Math.ceil(dist/(brush*.22)));
+    for(let i=1;i<=steps;i++) dot({x:a.x+dx*i/steps,y:a.y+dy*i/steps});
+  }
+  canvas.addEventListener('pointerdown', e => {
+    drawing=true; last=point(e); canvas.setPointerCapture(e.pointerId); dot(last); e.preventDefault();
+  });
+  canvas.addEventListener('pointermove', e => {
+    if(!drawing) return; const p=point(e); stroke(last,p); last=p; e.preventDefault();
+  });
+  function end(){drawing=false;last=null}
+  canvas.addEventListener('pointerup',end); canvas.addEventListener('pointercancel',end);
+
+  function setColor(c, btn) {
+    color=c;
+    document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('selected'));
+    if(btn) btn.classList.add('selected');
+  }
+  document.querySelectorAll('.swatch[data-color]').forEach(b => b.onclick=()=>setColor(b.dataset.color,b));
+  function randomColor() {
+    const c=`rgb(${Math.floor(Math.random()*256)}, ${Math.floor(Math.random()*256)}, ${Math.floor(Math.random()*256)})`;
+    setColor(c,null);
+    document.getElementById('random').style.background=c;
+  }
+  document.getElementById('random').onclick=randomColor;
+  document.getElementById('randomBottom').onclick=randomColor;
+  sizeInput.addEventListener('input',()=>brush=+sizeInput.value);
+  document.getElementById('big').onclick=()=>brush=230;
+  document.getElementById('clear').onclick=()=>{
+    if(confirm('캔버스를 모두 지울까요?')) {
+      const r=canvas.getBoundingClientRect(); ctx.fillStyle='#fff';ctx.fillRect(0,0,r.width,r.height);
+    }
+  };
+  document.getElementById('save').onclick=()=>{
+    const link=document.createElement('a');
+    link.download='myCanvas-drawing.png';
+    link.href=canvas.toDataURL('image/png'); link.click();
+  };
+})();
+</script>
+</body>
+</html>
