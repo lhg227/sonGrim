@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prism Frontier — 미니 RTS</title>
+
+<style>
+  :root {
+    --ink: #17222a;
+    --paper: #f4efe2;
+    --cream: #fff9ec;
+    --navy: #163040;
+    --teal: #227c7a;
+    --mint: #83d5b6;
+    --coral: #e96f5b;
+    --orange: #f2a451;
+    --purple: #6c5ca8;
+    --blue: #4da4d8;
+    --gold: #f7d96f;
+    --line: rgba(23, 34, 42, 0.18);
+    --shadow: 0 15px 35px rgba(29, 49, 55, 0.18);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-width: 1060px;
+    color: var(--ink);
+    font-family:
+      "Pretendard",
+      "Apple SD Gothic Neo",
+      "Noto Sans KR",
+      system-ui,
+      sans-serif;
+    background:
+      radial-gradient(circle at 7% 10%, rgba(131, 213, 182, 0.44) 0 6%, transparent 6.3%),
+      radial-gradient(circle at 92% 13%, rgba(233, 111, 91, 0.24) 0 9%, transparent 9.3%),
+      radial-gradient(circle at 18% 92%, rgba(77, 164, 216, 0.20) 0 10%, transparent 10.4%),
+      linear-gradient(135deg, #d4e6d7 0%, #e8e0bf 49%, #e6b7a0 100%);
+    min-height: 100vh;
+    overflow-x: auto;
+  }
+
+  button {
+    font: inherit;
+  }
+
+  .app-shell {
+    width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* 상단 헤더 */
+  .topbar {
+    min-height: 91px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px 20px;
+    margin-bottom: 18px;
+    border: 2px solid rgba(23, 34, 42, 0.75);
+    background: rgba(255, 249, 236, 0.84);
+    box-shadow: 5px 5px 0 rgba(23, 34, 42, 0.15);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 320px;
+  }
+
+  .brand-mark {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    transform: rotate(45deg);
+    background: var(--coral);
+    border: 3px solid var(--ink);
+    box-shadow: 5px 5px 0 var(--mint);
+  }
+
+  .brand-mark::before,
+  .brand-mark::after {
+    content: "";
+    position: absolute;
+    background: var(--ink);
+  }
+
+  .brand-mark::before {
+    width: 14px;
+    height: 14px;
+    top: 13px;
+    left: 13px;
+  }
+
+  .brand-mark::after {
+    width: 30px;
+    height: 3px;
+    top: 20px;
+    left: 8px;
+    transform: rotate(-45deg);
+  }
+
+  .brand-copy small {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--teal);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+  }
+
+  .brand-copy h1 {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: -0.04em;
+  }
+
+  .resource-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .resource-card {
+    min-width: 148px;
+    padding: 10px 14px;
+    border: 2px solid var(--ink);
+    background: var(--cream);
+  }
+
+  .resource-card .resource-label {
+    display: block;
+    color: #5a6263;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+
+  .resource-card strong {
+    display: block;
+    margin-top: 2px;
+    font-size: 25px;
+    line-height: 1;
+  }
+
+  .resource-card.money strong {
+    color: var(--teal);
+  }
+
+  .resource-card.unit-count strong {
+    color: var(--purple);
+  }
+
+  /* 메인 레이아웃 */
+  .game-layout {
+    display: grid;
+    grid-template-columns: 1000px 316px;
+    gap: 18px;
+    align-items: start;
+  }
+
+  /* 게임 맵 */
+  .map-wrap {
+    position: relative;
+    width: 1000px;
+  }
+
+  .map-frame {
+    position: relative;
+    width: 1000px;
+    height: 650px;
+    padding: 10px;
+    border: 3px solid var(--ink);
+    background: var(--ink);
+    box-shadow: var(--shadow);
+  }
+
+  .world {
+    position: relative;
+    width: 974px;
+    height: 624px;
+    overflow: hidden;
+    user-select: none;
+    cursor: crosshair;
+    background:
+      linear-gradient(30deg, transparent 49.4%, rgba(20, 58, 64, 0.11) 49.7%, rgba(20, 58, 64, 0.11) 50.3%, transparent 50.6%) 0 0 / 58px 58px,
+      linear-gradient(-30deg, transparent 49.4%, rgba(20, 58, 64, 0.11) 49.7%, rgba(20, 58, 64, 0.11) 50.3%, transparent 50.6%) 0 0 / 58px 58px,
+      radial-gradient(circle at 20% 24%, rgba(255, 234, 160, 0.78) 0 1%, transparent 1.2%),
+      radial-gradient(circle at 77% 15%, rgba(112, 204, 183, 0.72) 0 1.1%, transparent 1.3%),
+      radial-gradient(circle at 86% 72%, rgba(234, 117, 104, 0.62) 0 1.2%, transparent 1.4%),
+      linear-gradient(138deg, #dce8ce 0%, #d9e6c8 35%, #d8d7b5 35.2%, #e7c7a2 100%);
+  }
+
+  .world::before {
+    content: "";
+    position: absolute;
+    width: 530px;
+    height: 530px;
+    left: -120px;
+    top: -252px;
+    border: 52px solid rgba(77, 164, 216, 0.16);
+    border-radius: 50%;
+    transform: rotate(-17deg);
+    pointer-events: none;
+  }
+
+  .world::after {
+    content: "";
+    position: absolute;
+    width: 720px;
+    height: 135px;
+    right: -170px;
+    bottom: 66px;
+    background: rgba(233, 111, 91, 0.12);
+    border-top: 4px solid rgba(233, 111, 91, 0.26);
+    border-bottom: 4px solid rgba(233, 111, 91, 0.26);
+    transform: rotate(-19deg);
+    pointer-events: none;
+  }
+
+  .map-caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 37px;
+    padding: 0 12px;
+    border: 3px solid var(--ink);
+    border-top: 0;
+    background: var(--cream);
+    color: #586162;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .map-caption strong {
+    color: var(--ink);
+  }
+
+  .map-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .live-dot {
+    width: 9px;
+    height: 9px;
+    background: var(--coral);
+    border: 1px solid var(--ink);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.45); opacity: 0.55; }
+  }
+
+  /* 추상 지형 장식 */
+  .terrain-shape {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.72;
+  }
+
+  .terrain-one {
+    width: 220px;
+    height: 115px;
+    left: 88px;
+    bottom: 72px;
+    border: 4px solid rgba(44, 112, 114, 0.28);
+    border-radius: 48% 52% 42% 58%;
+    transform: rotate(20deg);
+  }
+
+  .terrain-two {
+    width: 180px;
+    height: 65px;
+    top: 64px;
+    left: 380px;
+    border-top: 9px solid rgba(244, 176, 86, 0.30);
+    border-radius: 50%;
+    transform: rotate(-13deg);
+  }
+
+  .terrain-three {
+    width: 75px;
+    height: 75px;
+    right: 99px;
+    top: 77px;
+    border: 8px solid rgba(108, 92, 168, 0.18);
+    transform: rotate(45deg);
+  }
+
+  .terrain-four {
+    width: 250px;
+    height: 80px;
+    right: -30px;
+    bottom: 16px;
+    border-top: 6px dashed rgba(28, 75, 78, 0.20);
+    transform: rotate(-11deg);
+  }
+
+  /* 방어 영역 */
+  .defense-zone {
+    position: absolute;
+    width: 670px;
+    height: 670px;
+    left: 118px;
+    top: 42px;
+    border: 2px dashed rgba(34, 124, 122, 0.33);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .zone-label {
+    position: absolute;
+    left: 170px;
+    top: 75px;
+    padding: 4px 7px;
+    background: rgba(244, 239, 226, 0.78);
+    border: 1px solid rgba(23, 34, 42, 0.2);
+    color: rgba(23, 34, 42, 0.62);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    pointer-events: none;
+  }
+
+  /* 선택 표시 */
+  .selection-ring {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--gold);
+    border-radius: 50%;
+    background: rgba(247, 217, 111, 0.12);
+    box-shadow: 0 0 0 3px rgba(23, 34, 42, 0.58);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 35;
+  }
+
+  .selection-ring.base-ring {
+    width: 130px;
+    height: 130px;
+    border-style: dashed;
+  }
+
+  .move-marker {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--coral);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 20;
+    animation: markerOut 0.55s ease-out forwards;
+  }
+
+  .move-marker::before,
+  .move-marker::after {
+    content: "";
+    position: absolute;
+    background: var(--coral);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .move-marker::before {
+    width: 3px;
+    height: 42px;
+  }
+
+  .move-marker::after {
+    width: 42px;
+    height: 3px;
+  }
+
+  @keyframes markerOut {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(0.35); }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(1.7); }
+  }
+
+  /* 공통 게임 오브젝트 */
+  .entity {
+    position: absolute;
+    z-index: 10;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+  }
+
+  .entity:hover {
+    filter: brightness(1.06) saturate(1.12);
+  }
+
+  /* 기지 */
+  .base {
+    width: 112px;
+    height: 112px;
+    z-index: 15;
+  }
+
+  .base-shadow {
+    position: absolute;
+    width: 94px;
+    height: 25px;
+    left: 10px;
+    bottom: 1px;
+    border-radius: 50%;
+    background: rgba(23, 34, 42, 0.20);
+    filter: blur(2px);
+  }
+
+  .base-core {
+    position: absolute;
+    width: 77px;
+    height: 77px;
+    left: 17px;
+    top: 17px;
+    border: 4px solid var(--ink);
+    background: var(--teal);
+    transform: rotate(45deg);
+    box-shadow: 7px 7px 0 rgba(23, 34, 42, 0.22);
+  }
+
+  .base-core::before {
+    content: "";
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    left: 21px;
+    top: 21px;
+    border: 3px solid var(--ink);
+    background: var(--mint);
+  }
+
+  .base-core::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    right: -14px;
+    top: -14px;
+    background: var(--coral);
+    border: 3px solid var(--ink);
+  }
+
+  .base-tower {
+    position: absolute;
+    width: 15px;
+    height: 47px;
+    left: 49px;
+    top: 0;
+    border: 3px solid var(--ink);
+    background: var(--orange);
+  }
+
+  .base-flag {
+    position: absolute;
+    top: -5px;
+    left: 62px;
+    width: 29px;
+    height: 18px;
+    border: 3px solid var(--ink);
+    background: var(--gold);
+    clip-path: polygon(0 0, 100% 23%, 61% 50%, 100% 100%, 0 100%);
+  }
+
+  .base-nameplate {
+    position: absolute;
+    left: 50%;
+    top: 115px;
+    transform: translateX(-50%);
+    width: 132px;
+    text-align: center;
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 1000;
+    letter-spacing: 0.07em;
+    text-shadow: 0 1px 0 var(--paper);
+    white-space: nowrap;
+  }
+
+  .production-orbit {
+    position: absolute;
+    left: -7px;
+    top: -7px;
+    width: 126px;
+    height: 126px;
+    border: 3px dotted var(--coral);
+    border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* 일꾼 */
+  .worker {
+    width: 36px;
+    height: 36px;
+  }
+
+  .worker-body {
+    position: absolute;
+    left: 6px;
+    top: 9px;
+    width: 25px;
+    height: 21px;
+    border: 3px solid var(--ink);
+    border-radius: 46% 46% 34% 34%;
+    background: var(--orange);
+  }
+
+  .worker-head {
+    position: absolute;
+    top: 1px;
+    left: 9px;
+    width: 18px;
+    height: 16px;
+    border: 3px solid var(--ink);
+    border-radius: 50%;
+    background: var(--cream);
+  }
+
+  .worker-visor {
+    position: absolute;
+    top: 6px;
+    left: 12px;
+    width: 12px;
+    height: 5px;
+    background: var(--teal);
+    border: 1px solid var(--ink);
+  }
+
+  .worker-tool {
+    position: absolute;
+    width: 20px;
+    height: 4px;
+    right: -4px;
+    bottom: 8px;
+    border: 1px solid var(--ink);
+    background: var(--purple);
+    transform: rotate(-33deg);
+    transform-origin: left center;
+  }
+
+  .worker-tool::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 10px;
+    right: -5px;
+    top: -4px;
+    border: 2px solid var(--ink);
+    background: var(--mint);
+  }
+
+  .cargo-orb {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 0 3px rgba(77, 164, 216, 0.22);
+  }
+
+  .worker.is-mining .worker-tool {
+    animation: mineTool 0.34s ease-in-out infinite alternate;
+  }
+
+  @keyframes mineTool {
+    from { transform: rotate(-50deg); }
+    to { transform: rotate(12deg); }
+  }
+
+  /* 군인 */
+  .soldier {
+    width: 40px;
+    height: 40px;
+  }
+
+  .soldier-shadow {
+    position: absolute;
+    left: 7px;
+    bottom: 2px;
+    width: 27px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(23, 34, 42, 0.2);
+  }
+
+  .soldier-body {
+    position: absolute;
+    left: 8px;
+    top: 12px;
+    width: 24px;
+    height: 22px;
+    border: 3px solid var(--ink);
+    background: var(--purple);
+    clip-path: polygon(16% 0, 84% 0, 100% 40%, 82% 100%, 18% 100%, 0 40%);
+  }
+
+  .soldier-head {
+    position: absolute;
+    left: 11px;
+    top: 3px;
+    width: 18px;
+    height: 16px;
+    border: 3px solid var(--ink);
+    border-radius: 44% 44% 36% 36%;
+    background: var(--mint);
+  }
+
+  .soldier-visor {
+    position: absolute;
+    top: 8px;
+    left: 14px;
+    width: 12px;
+    height: 4px;
+    background: var(--ink);
+  }
+
+  .soldier-rifle {
+    position: absolute;
+    width: 25px;
+    height: 6px;
+    right: -4px;
+    top: 18px;
+    border: 2px solid var(--ink);
+    background: var(--coral);
+    transform: rotate(-12deg);
+    transform-origin: left center;
+  }
+
+  .soldier-rifle::after {
+    content: "";
+    position: absolute;
+    width: 7px;
+    height: 11px;
+    right: -5px;
+    top: -4px;
+    background: var(--ink);
+  }
+
+  .soldier.is-moving .soldier-rifle {
+    animation: rifleWalk 0.28s ease-in-out infinite alternate;
+  }
+
+  @keyframes rifleWalk {
+    from { transform: rotate(-17deg) translateY(-1px); }
+    to { transform: rotate(-7deg) translateY(1px); }
+  }
+
+  /* 미네랄 */
+  .mineral {
+    width: 58px;
+    height: 58px;
+  }
+
+  .mineral-crystal {
+    position: absolute;
+    width: 39px;
+    height: 39px;
+    left: 10px;
+    top: 8px;
+    border: 3px solid var(--ink);
+    background: var(--blue);
+    transform: rotate(45deg);
+    box-shadow: 6px 6px 0 rgba(23, 34, 42, 0.14);
+  }
+
+  .mineral-crystal::before {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 31px;
+    left: 10px;
+    top: 1px;
+    background: rgba(255, 255, 255, 0.40);
+    border-right: 2px solid rgba(23, 34, 42, 0.30);
+  }
+
+  .mineral-crystal::after {
+    content: "";
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    right: -13px;
+    bottom: -13px;
+    border: 3px solid var(--ink);
+    background: var(--mint);
+    transform: rotate(17deg);
+  }
+
+  .mineral-count {
+    position: absolute;
+    left: 36px;
+    top: 42px;
+    min-width: 24px;
+    padding: 2px 5px;
+    border: 2px solid var(--ink);
+    background: var(--cream);
+    color: var(--ink);
+    text-align: center;
+    font-size: 10px;
+    font-weight: 1000;
+  }
+
+  .mineral.depleted {
+    opacity: 0.28;
+    filter: grayscale(1);
+    cursor: not-allowed;
+  }
+
+  /* 우측 패널 */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .panel {
+    border: 2px solid var(--ink);
+    background: rgba(255, 249, 236, 0.90);
+    box-shadow: 4px 4px 0 rgba(23, 34, 42, 0.13);
+  }
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 12px;
+    font-weight: 1000;
+    letter-spacing: 0.09em;
+  }
+
+  .panel-title .mini-square {
+    width: 10px;
+    height: 10px;
+    background: var(--mint);
+    transform: rotate(45deg);
+  }
+
+  .panel-body {
+    padding: 13px;
+  }
+
+  .selection-empty {
+    padding: 15px 5px 17px;
+    color: #687172;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .selected-card {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  .selected-symbol {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+    border: 2px solid var(--ink);
+    background: var(--mint);
+    color: var(--ink);
+    font-size: 20px;
+    font-weight: 1000;
+  }
+
+  .selected-symbol.worker-symbol {
+    background: var(--orange);
+  }
+
+  .selected-symbol.soldier-symbol {
+    background: var(--purple);
+    color: var(--cream);
+  }
+
+  .selected-info strong {
+    display: block;
+    font-size: 14px;
+  }
+
+  .selected-info span {
+    display: block;
+    margin-top: 4px;
+    color: #677172;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .order-hint {
+    margin-top: 13px;
+    padding: 9px 10px;
+    border-left: 5px solid var(--teal);
+    background: #e2eee2;
+    color: #435153;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .production-list {
+    display: grid;
+    gap: 9px;
+    margin-top: 14px;
+  }
+
+  .build-button {
+    position: relative;
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 58px;
+    padding: 8px;
+    border: 2px solid var(--ink);
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    background: var(--cream);
+    transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+  }
+
+  .build-button:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    background: #fffdf4;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .build-button:active:not(:disabled) {
+    transform: translate(0, 0);
+    box-shadow: none;
+  }
+
+  .build-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+  }
+
+  .build-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 2px solid var(--ink);
+    font-size: 20px;
+    font-weight: 1000;
+  }
+
+  .worker-build-icon {
+    background: var(--orange);
+  }
+
+  .soldier-build-icon {
+    background: var(--purple);
+    color: var(--cream);
+  }
+
+  .build-copy strong {
+    display: block;
+    font-size: 13px;
+  }
+
+  .build-copy small {
+    display: block;
+    margin-top: 3px;
+    color: #657072;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .build-cost {
+    color: var(--teal);
+    font-size: 13px;
+    font-weight: 1000;
+    white-space: nowrap;
+  }
+
+  .queue-box {
+    margin-top: 13px;
+    border: 2px solid rgba(23, 34, 42, 0.23);
+    background: #e7e3d4;
+  }
+
+  .queue-title {
+    padding: 7px 8px;
+    border-bottom: 1px solid rgba(23, 34, 42, 0.22);
+    color: #566061;
+    font-size: 10px;
+    font-weight: 1000;
+    letter-spacing: 0.08em;
+  }
+
+  .queue-empty {
+    padding: 9px;
+    color: #7a8180;
+    font-size: 11px;
+  }
+
+  .queue-item {
+    padding: 9px;
+  }
+
+  .queue-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .queue-progress {
+    height: 8px;
+    margin-top: 7px;
+    overflow: hidden;
+    border: 1px solid var(--ink);
+    background: var(--cream);
+  }
+
+  .queue-progress > div {
+    height: 100%;
+    width: 0%;
+    background:
+      repeating-linear-gradient(
+        45deg,
+        var(--coral) 0 7px,
+        var(--orange) 7px 14px
+      );
+    transition: width 0.12s linear;
+  }
+
+  .help-list {
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .help-list li {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 8px;
+    align-items: start;
+    color: #4b585a;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .mouse-icon {
+    position: relative;
+    width: 21px;
+    height: 29px;
+    margin-top: 1px;
+    border: 2px solid var(--ink);
+    border-radius: 11px;
+    background: var(--cream);
+  }
+
+  .mouse-icon::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 0;
+    width: 2px;
+    height: 13px;
+    background: var(--ink);
+  }
+
+  .mouse-icon.left::after,
+  .mouse-icon.right::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    width: 7px;
+    height: 8px;
+    background: var(--mint);
+  }
+
+  .mouse-icon.left::after {
+    left: 2px;
+    border-radius: 7px 0 0 0;
+  }
+
+  .mouse-icon.right::after {
+    right: 2px;
+    border-radius: 0 7px 0 0;
+    background: var(--coral);
+  }
+
+  .log-panel {
+    min-height: 134px;
+  }
+
+  .event-log {
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .log-line {
+    padding: 9px 11px;
+    border-bottom: 1px solid rgba(23, 34, 42, 0.11);
+    color: #566061;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .log-line:last-child {
+    border-bottom: 0;
+  }
+
+  .log-line strong {
+    color: var(--teal);
+  }
+
+  .footer-note {
+    padding: 4px 2px 0;
+    color: rgba(23, 34, 42, 0.63);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  /* 떠오르는 비용 / 수입 텍스트 */
+  .float-text {
+    position: absolute;
+    z-index: 100;
+    color: var(--teal);
+    font-size: 18px;
+    font-weight: 1000;
+    pointer-events: none;
+    text-shadow:
+      -1px -1px 0 var(--cream),
+      1px -1px 0 var(--cream),
+      -1px 1px 0 var(--cream),
+      1px 1px 0 var(--cream);
+    transform: translate(-50%, -50%);
+    animation: floatMoney 1.05s ease-out forwards;
+  }
+
+  .float-text.cost {
+    color: var(--coral);
+  }
+
+  @keyframes floatMoney {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -20%) scale(0.75);
+    }
+    18% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -180%) scale(1.05);
+    }
+  }
+</style>
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-copy">
+          <small>ABSTRACT TACTICAL BOARD</small>
+          <h1>PRISM FRONTIER</h1>
+        </div>
+      </div>
+
+      <div class="resource-bar">
+        <div class="resource-card money">
+          <span class="resource-label">보유 자금</span>
+          <strong id="moneyDisplay">300원</strong>
+        </div>
+
+        <div class="resource-card unit-count">
+          <span class="resource-label">전력 현황</span>
+          <strong id="unitDisplay">일꾼 2 · 군인 0</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="game-layout">
+      <div class="map-wrap">
+        <div class="map-frame">
+          <div id="world" class="world" aria-label="전략 게임 맵">
+            <div class="terrain-shape terrain-one"></div>
+            <div class="terrain-shape terrain-two"></div>
+            <div class="terrain-shape terrain-three"></div>
+            <div class="terrain-shape terrain-four"></div>
+
+            <div class="defense-zone"></div>
+            <div class="zone-label">BASE DEFENSE RANGE</div>
+
+            <div id="selectionRing" class="selection-ring" hidden></div>
+            <div id="entitiesLayer"></div>
+          </div>
+        </div>
+
+        <div class="map-caption">
+          <span><strong>SECTOR 07</strong> · 자원 지대와 기지 방어 구역</span>
+          <span class="map-status"><i class="live-dot"></i> 실시간 시뮬레이션</span>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <section class="panel">
+          <div class="panel-title">
+            <span>선택 대상</span>
+            <span class="mini-square"></span>
+          </div>
+
+          <div id="selectionPanel" class="panel-body">
+            <div class="selection-empty">
+              유닛 또는 기지를<br />
+              <strong>좌클릭</strong>하여 선택하세요.
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>조작 안내</span>
+            <span class="mini-square"></span>
+          </div>
+
+          <div class="panel-body">
+            <ul class="help-list">
+              <li>
+                <span class="mouse-icon left"></span>
+                <span><strong>좌클릭</strong><br />유닛 또는 기지 선택</span>
+              </li>
+              <li>
+                <span class="mouse-icon right"></span>
+                <span><strong>일꾼 + 미네랄 우클릭</strong><br />채취 명령</span>
+              </li>
+              <li>
+                <span class="mouse-icon right"></span>
+                <span><strong>군인 + 맵 우클릭</strong><br />방어 구역 내 이동 명령</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel log-panel">
+          <div class="panel-title">
+            <span>작전 기록</span>
+            <span class="mini-square"></span>
+          </div>
+          <div id="eventLog" class="event-log"></div>
+        </section>
+
+        <div class="footer-note">
+          미네랄 1개 기지 반납 시 +50원 · 생산은 기지에서 진행됩니다.
+        </div>
+      </aside>
+    </section>
+  </main>
+
+<script>
+  /*
+    ============================================================
+    PRISM FRONTIER
+    외부 라이브러리, 이미지, 서버 없이 동작하는 간단한 RTS 예제
+    ============================================================
+  */
+
+  const WORLD_WIDTH = 974;
+  const WORLD_HEIGHT = 624;
+
+  const BASE_X = 452;
+  const BASE_Y = 333;
+
+  // 기지 중심에서 이 거리 안쪽으로만 군인 이동 명령을 내릴 수 있습니다.
+  const DEFENSE_RADIUS = 320;
+
+  const game = {
+    money: 300,
+
+    base: {
+      id: "base-1",
+      x: BASE_X,
+      y: BASE_Y,
+      queue: [],
+      currentProduction: null
+    },
+
+    workers: [
+      {
+        id: "worker-1",
+        x: 372,
+        y: 430,
+        speed: 92,
+        state: "idle",
+        targetMineralId: null,
+        miningEndsAt: 0,
+        carrying: false
+      },
+      {
+        id: "worker-2",
+        x: 426,
+        y: 445,
+        speed: 92,
+        state: "idle",
+        targetMineralId: null,
+        miningEndsAt: 0,
+        carrying: false
+      }
+    ],
+
+    soldiers: [],
+
+    minerals: [
+      { id: "mineral-1", x: 173, y: 167, amount: 9, maxAmount: 9 },
+      { id: "mineral-2", x: 253, y: 218, amount: 8, maxAmount: 8 },
+      { id: "mineral-3", x: 139, y: 311, amount: 10, maxAmount: 10 },
+      { id: "mineral-4", x: 744, y: 143, amount: 9, maxAmount: 9 },
+      { id: "mineral-5", x: 833, y: 217, amount: 8, maxAmount: 8 },
+      { id: "mineral-6", x: 758, y: 456, amount: 10, maxAmount: 10 },
+      { id: "mineral-7", x: 864, y: 500, amount: 7, maxAmount: 7 }
+    ],
+
+    selected: null,
+    lastFrameTime: performance.now(),
+    productionSerial: 0,
+    nextWorkerNumber: 3,
+    nextSoldierNumber: 1
+  };
+
+  const world = document.getElementById("world");
+  const entitiesLayer = document.getElementById("entitiesLayer");
+  const selectionRing = document.getElementById("selectionRing");
+  const moneyDisplay = document.getElementById("moneyDisplay");
+  const unitDisplay = document.getElementById("unitDisplay");
+  const selectionPanel = document.getElementById("selectionPanel");
+  const eventLog = document.getElementById("eventLog");
+
+  /*
+    ------------------------------------------------------------
+    유틸리티
+    ------------------------------------------------------------
+  */
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function distance(x1, y1, x2, y2) {
+    return Math.hypot(x2 - x1, y2 - y1);
+  }
+
+  function getMineralById(id) {
+    return game.minerals.find(mineral => mineral.id === id);
+  }
+
+  function getWorkerById(id) {
+    return game.workers.find(worker => worker.id === id);
+  }
+
+  function getSoldierById(id) {
+    return game.soldiers.find(soldier => soldier.id === id);
+  }
+
+  function formatMoney(amount) {
+    return `${amount.toLocaleString("ko-KR")}원`;
+  }
+
+  function nowSeconds() {
+    return performance.now() / 1000;
+  }
+
+  function addLog(message, important = false) {
+    const line = document.createElement("div");
+    line.className = "log-line";
+    line.innerHTML = important ? `<strong>${message}</strong>` : message;
+
+    eventLog.prepend(line);
+
+    while (eventLog.children.length > 6) {
+      eventLog.removeChild(eventLog.lastChild);
+    }
+  }
+
+  function showFloatText(text, x, y, type = "") {
+    const floatText = document.createElement("div");
+    floatText.className = `float-text ${type}`;
+    floatText.textContent = text;
+    floatText.style.left = `${x}px`;
+    floatText.style.top = `${y}px`;
+
+    world.appendChild(floatText);
+
+    window.setTimeout(() => {
+      floatText.remove();
+    }, 1100);
+  }
+
+  function moveTowards(unit, targetX, targetY, speed, deltaSeconds) {
+    const dx = targetX - unit.x;
+    const dy = targetY - unit.y;
+    const remaining = Math.hypot(dx, dy);
+
+    if (remaining === 0) {
+      return true;
+    }
+
+    const step = speed * deltaSeconds;
+
+    if (remaining <= step) {
+      unit.x = targetX;
+      unit.y = targetY;
+      return true;
+    }
+
+    /*
+      dx와 dy의 비율을 유지하면서 이동합니다.
+      따라서 목표가 대각선 방향이라면 자연스럽게 대각선으로 전진합니다.
+    */
+    unit.x += (dx / remaining) * step;
+    unit.y += (dy / remaining) * step;
+
+    return false;
+  }
+
+  function getWorldPositionFromMouseEvent(event) {
+    const rect = world.getBoundingClientRect();
+
+    return {
+      x: clamp(event.clientX - rect.left, 0, WORLD_WIDTH),
+      y: clamp(event.clientY - rect.top, 0, WORLD_HEIGHT)
+    };
+  }
+
+  /*
+    ------------------------------------------------------------
+    선택 및 패널
+    ------------------------------------------------------------
+  */
+
+  function selectEntity(type, id) {
+    game.selected = { type, id };
+
+    if (type === "base") {
+      selectionRing.hidden = false;
+      selectionRing.classList.add("base-ring");
+      selectionRing.style.left = `${game.base.x}px`;
+      selectionRing.style.top = `${game.base.y}px`;
+    }
+
+    if (type === "worker") {
+      const worker = getWorkerById(id);
+
+      if (!worker) return;
+
+      selectionRing.hidden = false;
+      selectionRing.classList.remove("base-ring");
+      selectionRing.style.left = `${worker.x}px`;
+      selectionRing.style.top = `${worker.y}px`;
+    }
+
+    if (type === "soldier") {
+      const soldier = getSoldierById(id);
+
+      if (!soldier) return;
+
+      selectionRing.hidden = false;
+      selectionRing.classList.remove("base-ring");
+      selectionRing.style.left = `${soldier.x}px`;
+      selectionRing.style.top = `${soldier.y}px`;
+    }
+
+    updateSelectionPanel();
+    render();
+  }
+
+  function clearSelection() {
+    game.selected = null;
+    selectionRing.hidden = true;
+    updateSelectionPanel();
+    render();
+  }
+
+  function getWorkerStateText(worker) {
+    const stateMap = {
+      idle: "대기 중",
+      toMineral: "미네랄로 이동 중",
+      mining: "미네랄 채취 중",
+      returning: "기지로 귀환 중"
+    };
+
+    return stateMap[worker.state] || "대기 중";
+  }
+
+  function updateSelectionPanel() {
+    const selected = game.selected;
+
+    if (!selected) {
+      selectionPanel.innerHTML = `
+        <div class="selection-empty">
+          유닛 또는 기지를<br />
+          <strong>좌클릭</strong>하여 선택하세요.
+        </div>
+      `;
+      return;
+    }
+
+    if (selected.type === "worker") {
+      const worker = getWorkerById(selected.id);
+
+      if (!worker) {
+        clearSelection();
+        return;
+      }
+
+      const targetMineral = worker.targetMineralId
+        ? getMineralById(worker.targetMineralId)
+        : null;
+
+      const targetText = targetMineral && worker.state !== "idle"
+        ? `목표: 미네랄 ${targetMineral.id.replace("mineral-", "#")}`
+        : "명령 대기";
+
+      selectionPanel.innerHTML = `
+        <div class="selected-card">
+          <div class="selected-symbol worker-symbol">W</div>
+          <div class="selected-info">
+            <strong>채굴 일꾼</strong>
+            <span>${getWorkerStateText(worker)}<br />${targetText}</span>
+          </div>
+        </div>
+
+        <div class="order-hint">
+          미네랄 결정을 <strong>우클릭</strong>하면 자동으로
+          이동 · 채취 · 귀환 · 반납을 반복합니다.
+        </div>
+      `;
+      return;
+    }
+
+    if (selected.type === "soldier") {
+      const soldier = getSoldierById(selected.id);
+
+      if (!soldier) {
+        clearSelection();
+        return;
+      }
+
+      const movingText = soldier.target
+        ? "이동 중 — 목표 지점으로 전진"
+        : "대기 중 — 방어 명령 수신 가능";
+
+      selectionPanel.innerHTML = `
+        <div class="selected-card">
+          <div class="selected-symbol soldier-symbol">S</div>
+          <div class="selected-info">
+            <strong>방어 군인</strong>
+            <span>${movingText}<br />기지 방어 구역 소속</span>
+          </div>
+        </div>
+
+        <div class="order-hint">
+          맵의 원하는 위치를 <strong>우클릭</strong>하세요.
+          기지 주변 방어 구역 안에서 대각선으로 이동합니다.
+        </div>
+      `;
+      return;
+    }
+
+    if (selected.type === "base") {
+      const current = game.base.currentProduction;
+      const queueCount = game.base.queue.length;
+
+      let queueMarkup = `
+        <div class="queue-empty">
+          현재 생산 대기열이 비어 있습니다.
+        </div>
+      `;
+
+      if (current) {
+        const elapsed = nowSeconds() - current.startedAt;
+        const progress = clamp((elapsed / current.duration) * 100, 0, 100);
+        const productName = current.type === "worker" ? "일꾼" : "군인";
+
+        queueMarkup = `
+          <div class="queue-item">
+            <div class="queue-item-top">
+              <span>생산 중: ${productName}</span>
+              <span>${Math.ceil(Math.max(0, current.duration - elapsed))}초</span>
+            </div>
+            <div class="queue-progress">
+              <div style="width: ${progress}%"></div>
+            </div>
+          </div>
+          ${queueCount > 0 ? `
+            <div class="queue-empty">
+              추가 대기: ${queueCount}개
+            </div>
+          ` : ""}
+        `;
+      } else if (queueCount > 0) {
+        queueMarkup = `
+          <div class="queue-empty">
+            생산 준비 중: ${queueCount}개
+          </div>
+        `;
+      }
+
+      selectionPanel.innerHTML = `
+        <div class="selected-card">
+          <div class="selected-symbol">⌂</div>
+          <div class="selected-info">
+            <strong>프리즘 전진 기지</strong>
+            <span>유닛 생산 및 자원 반납 지점<br />현재 자금: ${formatMoney(game.money)}</span>
+          </div>
+        </div>
+
+        <div class="production-list">
+          <button class="build-button" id="buildWorkerButton" ${game.money < 100 ? "disabled" : ""}>
+            <span class="build-icon worker-build-icon">W</span>
+            <span class="build-copy">
+              <strong>일꾼 생산</strong>
+              <small>채굴 유닛 · 약 3초</small>
+            </span>
+            <span class="build-cost">100원</span>
+          </button>
+
+          <button class="build-button" id="buildSoldierButton" ${game.money < 150 ? "disabled" : ""}>
+            <span class="build-icon soldier-build-icon">S</span>
+            <span class="build-copy">
+              <strong>군인 생산</strong>
+              <small>방어 유닛 · 약 5초</small>
+            </span>
+            <span class="build-cost">150원</span>
+          </button>
+        </div>
+
+        <div class="queue-box">
+          <div class="queue-title">PRODUCTION QUEUE</div>
+          ${queueMarkup}
+        </div>
+      `;
+
+      const workerButton = document.getElementById("buildWorkerButton");
+      const soldierButton = document.getElementById("buildSoldierButton");
+
+      if (workerButton) {
+        workerButton.addEventListener("click", event => {
+          event.stopPropagation();
+          enqueueProduction("worker");
+        });
+      }
+
+      if (soldierButton) {
+        soldierButton.addEventListener("click", event => {
+          event.stopPropagation();
+          enqueueProduction("soldier");
+        });
+      }
+    }
+  }
+
+  /*
+    ------------------------------------------------------------
+    생산 시스템
+    ------------------------------------------------------------
+  */
+
+  function enqueueProduction(type) {
+    const product = type === "worker"
+      ? { type: "worker", name: "일꾼", cost: 100, duration: 3 }
+      : { type: "soldier", name: "군인", cost: 150, duration: 5 };
+
+    if (game.money < product.cost) {
+      addLog(`자금 부족: ${product.name} 생산에는 ${product.cost}원이 필요합니다.`, true);
+      showFloatText("자금 부족", game.base.x, game.base.y - 50, "cost");
+      return;
+    }
+
+    game.money -= product.cost;
+
+    game.base.queue.push({
+      ...product,
+      queueId: `production-${++game.productionSerial}`
+    });
+
+    showFloatText(`-${product.cost}원`, game.base.x, game.base.y - 35, "cost");
+    addLog(`${product.name} 생산 명령을 대기열에 추가했습니다.`);
+    updateHUD();
+    updateSelectionPanel();
+  }
+
+  function startNextProduction() {
+    if (game.base.currentProduction || game.base.queue.length === 0) {
+      return;
+    }
+
+    const next = game.base.queue.shift();
+
+    game.base.currentProduction = {
+      ...next,
+      startedAt: nowSeconds()
+    };
+
+    addLog(`${next.name} 생산을 시작했습니다.`);
+  }
+
+  function finishProduction(product) {
+    game.base.currentProduction = null;
+
+    if (product.type === "worker") {
+      const worker = {
+        id: `worker-${game.nextWorkerNumber}`,
+        x: game.base.x + 74,
+        y: game.base.y + 52,
+        speed: 92,
+        state: "idle",
+        targetMineralId: null,
+        miningEndsAt: 0,
+        carrying: false
+      };
+
+      game.nextWorkerNumber += 1;
+      game.workers.push(worker);
+
+      addLog("새로운 <strong>채굴 일꾼</strong>이 기지에서 출발했습니다.", true);
+      showFloatText("일꾼 완성", worker.x, worker.y - 22);
+    }
+
+    if (product.type === "soldier") {
+      const soldier = {
+        id: `soldier-${game.nextSoldierNumber}`,
+        x: game.base.x + 91,
+        y: game.base.y + 16,
+        speed: 105,
+        target: null
+      };
+
+      game.nextSoldierNumber += 1;
+      game.soldiers.push(soldier);
+
+      addLog("새로운 <strong>방어 군인</strong>이 기지 앞에 배치되었습니다.", true);
+      showFloatText("군인 배치", soldier.x, soldier.y - 25);
+    }
+
+    updateHUD();
+    updateSelectionPanel();
+  }
+
+  function updateProduction() {
+    startNextProduction();
+
+    const current = game.base.currentProduction;
+
+    if (!current) {
+      return;
+    }
+
+    const elapsed = nowSeconds() - current.startedAt;
+
+    if (elapsed >= current.duration) {
+      finishProduction(current);
+      startNextProduction();
+    }
+  }
+
+  /*
+    ------------------------------------------------------------
+    일꾼 채굴 시스템
+    ------------------------------------------------------------
+  */
+
+  function commandWorkerToMine(worker, mineral) {
+    if (!mineral || mineral.amount <= 0) {
+      addLog("이미 고갈된 미네랄입니다.");
+      return;
+    }
+
+    worker.targetMineralId = mineral.id;
+    worker.state = "toMineral";
+    worker.carrying = false;
+
+    addLog(`일꾼에게 미네랄 ${mineral.id.replace("mineral-", "#")} 채취를 명령했습니다.`);
+
+    showFloatText("채굴 명령", mineral.x, mineral.y - 34);
+
+    updateSelectionPanel();
+  }
+
+  function updateWorkers(deltaSeconds) {
+    const currentTime = nowSeconds();
+
+    for (const worker of game.workers) {
+      const mineral = worker.targetMineralId
+        ? getMineralById(worker.targetMineralId)
+        : null;
+
+      if (worker.state === "toMineral") {
+        if (!mineral || mineral.amount <= 0) {
+          worker.state = "idle";
+          worker.targetMineralId = null;
+          continue;
+        }
+
+        const reached = moveTowards(
+          worker,
+          mineral.x,
+          mineral.y,
+          worker.speed,
+          deltaSeconds
+        );
+
+        if (reached) {
+          worker.state = "mining";
+          worker.miningEndsAt = currentTime + 1.15;
+        }
+      }
+
+      if (worker.state === "mining") {
+        if (!mineral || mineral.amount <= 0) {
+          worker.state = "idle";
+          worker.targetMineralId = null;
+          continue;
+        }
+
+        if (currentTime >= worker.miningEndsAt) {
+          /*
+            미네랄은 채굴이 끝나는 시점에 1개 감소합니다.
+            하지만 자금은 반드시 기지까지 안전하게 돌아와야 증가합니다.
+          */
+          mineral.amount -= 1;
+          worker.carrying = true;
+          worker.state = "returning";
+
+          if (mineral.amount === 0) {
+            addLog(`미네랄 ${mineral.id.replace("mineral-", "#")} 지대가 고갈되었습니다.`);
+          }
+        }
+      }
+
+      if (worker.state === "returning") {
+        const reached = moveTowards(
+          worker,
+          game.base.x,
+          game.base.y,
+          worker.speed,
+          deltaSeconds
+        );
+
+        if (reached) {
+          worker.carrying = false;
+          game.money += 50;
+
+          showFloatText("+50원", game.base.x, game.base.y - 55);
+          addLog("일꾼이 미네랄 1개를 반납했습니다. <strong>+50원</strong>");
+
+          /*
+            같은 미네랄에 남은 자원이 있으면 자동으로 반복 채굴합니다.
+          */
+          if (mineral && mineral.amount > 0) {
+            worker.state = "toMineral";
+          } else {
+            worker.state = "idle";
+            worker.targetMineralId = null;
+          }
+
+          updateHUD();
+          updateSelectionPanel();
+        }
+      }
+    }
+  }
+
+  /*
+    ------------------------------------------------------------
+    군인 이동 시스템
+    ------------------------------------------------------------
+  */
+
+  function commandSoldierMove(soldier, requestedX, requestedY) {
+    const dx = requestedX - game.base.x;
+    const dy = requestedY - game.base.y;
+    const requestedDistance = Math.hypot(dx, dy);
+
+    /*
+      기지 주위의 방어 범위를 넘겨 우클릭했다면
+      목표점을 원형 방어 구역의 가장자리까지 줄입니다.
+    */
+    let targetX = requestedX;
+    let targetY = requestedY;
+    let wasClamped = false;
+
+    if (requestedDistance > DEFENSE_RADIUS) {
+      targetX = game.base.x + (dx / requestedDistance) * DEFENSE_RADIUS;
+      targetY = game.base.y + (dy / requestedDistance) * DEFENSE_RADIUS;
+      wasClamped = true;
+    }
+
+    targetX = clamp(targetX, 25, WORLD_WIDTH - 25);
+    targetY = clamp(targetY, 25, WORLD_HEIGHT - 25);
+
+    soldier.target = {
+      x: targetX,
+      y: targetY
+    };
+
+    createMoveMarker(targetX, targetY);
+
+    if (wasClamped) {
+      addLog("방어 구역 가장자리로 이동 명령을 조정했습니다.");
+    } else {
+      addLog("군인이 지정 위치로 이동합니다.");
+    }
+
+    updateSelectionPanel();
+  }
+
+  function updateSoldiers(deltaSeconds) {
+    for (const soldier of game.soldiers) {
+      if (!soldier.target) {
+        continue;
+      }
+
+      const reached = moveTowards(
+        soldier,
+        soldier.target.x,
+        soldier.target.y,
+        soldier.speed,
+        deltaSeconds
+      );
+
+      if (reached) {
+        soldier.target = null;
+
+        if (
+          game.selected &&
+          game.selected.type === "soldier" &&
+          game.selected.id === soldier.id
+        ) {
+          updateSelectionPanel();
+        }
+      }
+    }
+  }
+
+  function createMoveMarker(x, y) {
+    const marker = document.createElement("div");
+    marker.className = "move-marker";
+    marker.style.left = `${x}px`;
+    marker.style.top = `${y}px`;
+
+    world.appendChild(marker);
+
+    window.setTimeout(() => {
+      marker.remove();
+    }, 600);
+  }
+
+  /*
+    ------------------------------------------------------------
+    화면 렌더링
+    ------------------------------------------------------------
+  */
+
+  /*
+    ------------------------------------------------------------
+    [수정됨] DOM 노드를 프레임마다 파괴/재생성하지 않고
+    "생성은 1회, 이후엔 갱신"만 하도록 바꿉니다.
+
+    원인이었던 버그: 기존 render()는 매 애니메이션 프레임(초당 약 60회)마다
+    entitiesLayer.innerHTML = "" 로 모든 유닛 DOM 요소를 통째로 지우고
+    createXxxElement()로 다시 만들었습니다.
+    사람이 유닛을 "클릭"하는 동작은 mousedown → mouseup 두 이벤트로 이뤄지는데,
+    그 찰나의 시간(수십 ms) 사이에도 render()가 여러 번 실행되어
+    mousedown이 발생했던 바로 그 DOM 노드가 이미 삭제되고
+    똑같이 생긴 "다른" 노드로 교체되어 있는 상태가 됩니다.
+    브라우저는 mousedown 시점의 대상 노드가 문서에서 사라지면
+    click 이벤트를 정상적으로 발생시키지 않기 때문에
+    (특히 Chrome 계열에서), 일꾼·군인·기지를 눌러도 선택이 되지 않거나
+    매우 불안정하게만 되는 것이었습니다.
+
+    해결: 유닛마다 DOM 노드를 한 번만 만들고 Map에 보관해 재사용하면서,
+    위치·상태가 바뀔 때만 style/class만 갱신합니다.
+    이러면 mousedown~mouseup 사이에 노드가 사라지는 일이 없으므로
+    클릭(좌클릭 선택, 우클릭 명령) 이벤트가 항상 정상적으로 잡힙니다.
+    ------------------------------------------------------------
+  */
+
+  const workerElements = new Map();
+  const soldierElements = new Map();
+  const mineralElements = new Map();
+  let baseElementRef = null;
+
+  function createBaseElement() {
+    const baseElement = document.createElement("div");
+    baseElement.className = "entity base";
+    baseElement.dataset.type = "base";
+    baseElement.dataset.id = game.base.id;
+
+    baseElement.innerHTML = `
+      <div class="base-shadow"></div>
+      <div class="base-tower"></div>
+      <div class="base-flag"></div>
+      <div class="base-core"></div>
+      <div class="base-nameplate">PRISM BASE</div>
+    `;
+
+    return baseElement;
+  }
+
+  function updateBaseElement(baseElement) {
+    baseElement.style.left = `${game.base.x}px`;
+    baseElement.style.top = `${game.base.y}px`;
+
+    const isProducing = Boolean(game.base.currentProduction);
+    const existingOrbit = baseElement.querySelector(".production-orbit");
+
+    if (isProducing && !existingOrbit) {
+      const orbit = document.createElement("div");
+      orbit.className = "production-orbit";
+      /* base-shadow 바로 다음 위치에 넣어 기존 시각적 스택 순서를 유지합니다. */
+      baseElement.insertBefore(orbit, baseElement.children[1] || null);
+    } else if (!isProducing && existingOrbit) {
+      existingOrbit.remove();
+    }
+  }
+
+  function createWorkerElement(worker) {
+    const workerElement = document.createElement("div");
+    workerElement.className = "entity worker";
+    workerElement.dataset.type = "worker";
+    workerElement.dataset.id = worker.id;
+
+    workerElement.innerHTML = `
+      <div class="worker-head"></div>
+      <div class="worker-visor"></div>
+      <div class="worker-body"></div>
+      <div class="worker-tool"></div>
+    `;
+
+    return workerElement;
+  }
+
+  function updateWorkerElement(workerElement, worker) {
+    workerElement.style.left = `${worker.x}px`;
+    workerElement.style.top = `${worker.y}px`;
+    workerElement.classList.toggle("is-mining", worker.state === "mining");
+
+    const existingCargo = workerElement.querySelector(".cargo-orb");
+
+    if (worker.carrying && !existingCargo) {
+      const orb = document.createElement("div");
+      orb.className = "cargo-orb";
+      workerElement.appendChild(orb);
+    } else if (!worker.carrying && existingCargo) {
+      existingCargo.remove();
+    }
+  }
+
+  function createSoldierElement(soldier) {
+    const soldierElement = document.createElement("div");
+    soldierElement.className = "entity soldier";
+    soldierElement.dataset.type = "soldier";
+    soldierElement.dataset.id = soldier.id;
+
+    soldierElement.innerHTML = `
+      <div class="soldier-shadow"></div>
+      <div class="soldier-head"></div>
+      <div class="soldier-visor"></div>
+      <div class="soldier-body"></div>
+      <div class="soldier-rifle"></div>
+    `;
+
+    return soldierElement;
+  }
+
+  function updateSoldierElement(soldierElement, soldier) {
+    soldierElement.style.left = `${soldier.x}px`;
+    soldierElement.style.top = `${soldier.y}px`;
+    soldierElement.classList.toggle("is-moving", Boolean(soldier.target));
+  }
+
+  function createMineralElement(mineral) {
+    const mineralElement = document.createElement("div");
+    mineralElement.className = "entity mineral";
+    mineralElement.dataset.type = "mineral";
+    mineralElement.dataset.id = mineral.id;
+
+    mineralElement.innerHTML = `
+      <div class="mineral-crystal"></div>
+      <div class="mineral-count"></div>
+    `;
+
+    return mineralElement;
+  }
+
+  function updateMineralElement(mineralElement, mineral) {
+    mineralElement.style.left = `${mineral.x}px`;
+    mineralElement.style.top = `${mineral.y}px`;
+    mineralElement.classList.toggle("depleted", mineral.amount <= 0);
+
+    const countEl = mineralElement.querySelector(".mineral-count");
+    if (countEl) {
+      countEl.textContent = mineral.amount;
+    }
+  }
+
+  /*
+    items 배열과 DOM 요소 Map을 비교해서
+    새로 생긴 것만 생성하고, 사라진 것만 제거하고,
+    나머지는 기존 노드를 그대로 재사용해 갱신합니다.
+  */
+  function syncEntityElements(items, elementsMap, createFn, updateFn) {
+    const seenIds = new Set();
+
+    for (const item of items) {
+      seenIds.add(item.id);
+
+      let element = elementsMap.get(item.id);
+
+      if (!element) {
+        element = createFn(item);
+        elementsMap.set(item.id, element);
+        entitiesLayer.appendChild(element);
+      }
+
+      updateFn(element, item);
+    }
+
+    for (const [id, element] of elementsMap) {
+      if (!seenIds.has(id)) {
+        element.remove();
+        elementsMap.delete(id);
+      }
+    }
+  }
+
+  function render() {
+    if (!baseElementRef) {
+      baseElementRef = createBaseElement();
+      entitiesLayer.appendChild(baseElementRef);
+    }
+    updateBaseElement(baseElementRef);
+
+    syncEntityElements(game.minerals, mineralElements, createMineralElement, updateMineralElement);
+    syncEntityElements(game.workers, workerElements, createWorkerElement, updateWorkerElement);
+    syncEntityElements(game.soldiers, soldierElements, createSoldierElement, updateSoldierElement);
+
+    /*
+      선택 링은 매 프레임 선택 유닛의 실제 위치를 따라갑니다.
+    */
+    if (game.selected) {
+      if (game.selected.type === "worker") {
+        const worker = getWorkerById(game.selected.id);
+
+        if (worker) {
+          selectionRing.style.left = `${worker.x}px`;
+          selectionRing.style.top = `${worker.y}px`;
+        }
+      }
+
+      if (game.selected.type === "soldier") {
+        const soldier = getSoldierById(game.selected.id);
+
+        if (soldier) {
+          selectionRing.style.left = `${soldier.x}px`;
+          selectionRing.style.top = `${soldier.y}px`;
+        }
+      }
+
+      if (game.selected.type === "base") {
+        selectionRing.style.left = `${game.base.x}px`;
+        selectionRing.style.top = `${game.base.y}px`;
+      }
+    }
+  }
+
+  function updateHUD() {
+    moneyDisplay.textContent = formatMoney(game.money);
+    unitDisplay.textContent = `일꾼 ${game.workers.length} · 군인 ${game.soldiers.length}`;
+  }
+
+  /*
+    ------------------------------------------------------------
+    마우스 입력
+    ------------------------------------------------------------
+  */
+
+  world.addEventListener("click", event => {
+    const entity = event.target.closest(".entity");
+
+    /*
+      맵의 빈 공간을 좌클릭하면 선택을 해제합니다.
+    */
+    if (!entity) {
+      clearSelection();
+      return;
+    }
+
+    const type = entity.dataset.type;
+    const id = entity.dataset.id;
+
+    if (type === "base") {
+      selectEntity("base", id);
+      return;
+    }
+
+    if (type === "worker") {
+      selectEntity("worker", id);
+      return;
+    }
+
+    if (type === "soldier") {
+      selectEntity("soldier", id);
+      return;
+    }
+
+    /*
+      미네랄은 직접 선택하지 않고,
+      일꾼이 선택된 상태에서 우클릭하여 명령합니다.
+    */
+    if (type === "mineral") {
+      addLog("미네랄은 일꾼 선택 후 우클릭하여 채취할 수 있습니다.");
+    }
+  });
+
+  world.addEventListener("contextmenu", event => {
+    event.preventDefault();
+
+    const clickedEntity = event.target.closest(".entity");
+    const selected = game.selected;
+
+    if (!selected) {
+      addLog("먼저 유닛을 좌클릭하여 선택하세요.");
+      return;
+    }
+
+    /*
+      일꾼이 선택되었을 때:
+      미네랄을 우클릭한 경우에만 채취 명령을 내립니다.
+    */
+    if (selected.type === "worker") {
+      const worker = getWorkerById(selected.id);
+
+      if (!worker) return;
+
+      if (
+        clickedEntity &&
+        clickedEntity.dataset.type === "mineral"
+      ) {
+        const mineral = getMineralById(clickedEntity.dataset.id);
+        commandWorkerToMine(worker, mineral);
+      } else {
+        addLog("일꾼은 미네랄 결정에 우클릭해야 채굴을 시작합니다.");
+      }
+
+      return;
+    }
+
+    /*
+      군인이 선택되었을 때:
+      맵 어디든 우클릭하면 해당 방향으로 이동합니다.
+      방어 반경 밖은 자동으로 경계선 위치로 보정됩니다.
+    */
+    if (selected.type === "soldier") {
+      const soldier = getSoldierById(selected.id);
+
+      if (!soldier) return;
+
+      const position = getWorldPositionFromMouseEvent(event);
+      commandSoldierMove(soldier, position.x, position.y);
+      return;
+    }
+
+    if (selected.type === "base") {
+      addLog("기지에서는 우측 생산 메뉴를 사용하세요.");
+    }
+  });
+
+  /*
+    ------------------------------------------------------------
+    게임 루프
+    ------------------------------------------------------------
+  */
+
+  function gameLoop(frameTime) {
+    const deltaSeconds = Math.min(
+      (frameTime - game.lastFrameTime) / 1000,
+      0.05
+    );
+
+    game.lastFrameTime = frameTime;
+
+    updateProduction();
+    updateWorkers(deltaSeconds);
+    updateSoldiers(deltaSeconds);
+
+    updateHUD();
+    render();
+
+    /*
+      기지가 선택되어 있고 생산이 진행 중이라면,
+      진행률 바를 갱신하기 위해 패널을 주기적으로 다시 그립니다.
+    */
+    if (
+      game.selected &&
+      game.selected.type === "base" &&
+      game.base.currentProduction
+    ) {
+      updateSelectionPanel();
+    }
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  /*
+    ------------------------------------------------------------
+    시작 처리
+    ------------------------------------------------------------
+  */
+
+  addLog("<strong>프리즘 전진 기지</strong>가 작전을 시작했습니다.", true);
+  addLog("초기 일꾼 2기가 배치되었습니다.");
+  addLog("일꾼을 선택하고 미네랄을 우클릭해 자원을 채취하세요.");
+
+  updateHUD();
+  updateSelectionPanel();
+  render();
+
+  requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>점프 언덕 대모험</title>
+<style>
+  :root {
+    --ui-dark: #17324d;
+    --ui-light: #ffffff;
+    --accent: #ffcc36;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #8bd7ff;
+    font-family: Arial, "Noto Sans KR", sans-serif;
+  }
+
+  #gameWrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #8bd7ff;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+
+  #hud {
+    position: absolute;
+    z-index: 5;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(94vw, 920px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    color: #fff;
+    font-weight: 900;
+    text-shadow: 2px 2px 0 #18324a;
+    font-size: clamp(14px, 2.4vw, 22px);
+  }
+
+  .hudBox {
+    padding: 8px 13px;
+    border: 3px solid rgba(255, 255, 255, 0.88);
+    border-radius: 10px;
+    background: rgba(23, 50, 77, 0.78);
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.17);
+  }
+
+  #message {
+    position: absolute;
+    z-index: 10;
+    top: 50%;
+    left: 50%;
+    width: min(88vw, 560px);
+    transform: translate(-50%, -50%);
+    padding: 26px 22px;
+    border: 5px solid #fff;
+    border-radius: 18px;
+    background: rgba(23, 50, 77, 0.93);
+    box-shadow: 0 9px 0 rgba(0, 0, 0, 0.2);
+    color: #fff;
+    text-align: center;
+  }
+
+  #message.hidden {
+    display: none;
+  }
+
+  #message h1 {
+    margin: 0 0 12px;
+    font-size: clamp(25px, 5vw, 42px);
+  }
+
+  #message p {
+    margin: 9px 0;
+    line-height: 1.55;
+    font-size: clamp(14px, 2.6vw, 19px);
+  }
+
+  #startButton,
+  #restartButton {
+    appearance: none;
+    margin-top: 13px;
+    padding: 12px 26px;
+    border: 3px solid #fff;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #29323d;
+    box-shadow: 0 4px 0 #b98200;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  #startButton:active,
+  #restartButton:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #b98200;
+  }
+
+  #touchHint {
+    position: absolute;
+    z-index: 4;
+    right: 12px;
+    bottom: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(23, 50, 77, 0.55);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    font-weight: bold;
+    pointer-events: none;
+  }
+
+  /* 모바일 터치 영역이 눌렸을 때만 은은하게 표시 */
+  #touchOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    pointer-events: none;
+  }
+
+  .touchZone {
+    flex: 1;
+    opacity: 0;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    transition: opacity 0.1s;
+  }
+
+  .touchZone.active {
+    opacity: 0.18;
+    background: #fff;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    #touchHint {
+      opacity: 0.45;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="gameWrap">
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <div class="hudBox">점수 <span id="score">000000</span></div>
+    <div class="hudBox">적 <span id="enemyCount">0</span></div>
+  </div>
+
+  <div id="touchOverlay" aria-hidden="true">
+    <div class="touchZone" id="zoneLeft"></div>
+    <div class="touchZone" id="zoneJump"></div>
+    <div class="touchZone" id="zoneRight"></div>
+  </div>
+
+  <div id="touchHint">왼쪽: 이동 · 가운데: 점프 · 오른쪽: 이동</div>
+
+  <div id="message">
+    <h1>점프 언덕 대모험</h1>
+    <p>
+      언덕을 뛰어넘고 네모 악당을 밟아보세요!<br>
+      악당을 밟으면 <strong>100점</strong>입니다.
+    </p>
+    <p>
+      PC: ← → / 스페이스바<br>
+      휴대폰: 왼쪽 / 가운데 / 오른쪽 화면 터치
+    </p>
+    <button id="startButton">게임 시작</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* =========================
+     캔버스 및 화면 기본 설정
+     ========================= */
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const scoreEl = document.getElementById("score");
+  const enemyCountEl = document.getElementById("enemyCount");
+  const messageEl = document.getElementById("message");
+  const startButton = document.getElementById("startButton");
+
+  const zoneLeft = document.getElementById("zoneLeft");
+  const zoneJump = document.getElementById("zoneJump");
+  const zoneRight = document.getElementById("zoneRight");
+
+  let W = 0;
+  let H = 0;
+  let dpr = 1;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // 화면 높이에 따라 지면 위치를 다시 정함
+    groundY = Math.max(390, H - 105);
+
+    // 화면이 너무 작아졌을 때 플레이어가 바닥 아래에 있지 않게 보정
+    if (player) {
+      player.y = Math.min(player.y, groundY - player.h);
+    }
+  }
+
+  window.addEventListener("resize", resize);
+
+  /* =========================
+     게임 상수
+     ========================= */
+  const WORLD_WIDTH = 4300;
+  const GRAVITY = 1750;
+  const MOVE_SPEED = 330;
+  const JUMP_POWER = 675;
+  const FRICTION = 0.80;
+
+  let groundY = 560;
+  let gameState = "title"; // title, playing, won, lost
+  let cameraX = 0;
+  let score = 0;
+  let elapsed = 0;
+  let lastTime = 0;
+  let floatingTexts = [];
+  let clouds = [];
+  let platforms = [];
+  let enemies = [];
+  let player = null;
+
+  const keys = {
+    left: false,
+    right: false,
+    jump: false
+  };
+
+  let jumpRequested = false;
+
+  /* =========================
+     월드 생성
+     - 시작 지면
+     - 점프로 오를 언덕 3개
+     - 구덩이
+     - 언덕 4개
+     - 성
+     ========================= */
+  function makePlatform(x, yOffset, w, h, type = "hill") {
+    return {
+      x,
+      y: groundY - yOffset,
+      w,
+      h,
+      type
+    };
+  }
+
+  function createWorld() {
+    platforms = [];
+    enemies = [];
+    floatingTexts = [];
+    clouds = [];
+
+    // 시작 지면
+    platforms.push(makePlatform(-400, 0, 870, 70, "ground"));
+
+    // 첫 번째 구간: 올라갈 수 있는 언덕 3개
+    platforms.push(makePlatform(470, 70, 210, 70, "hill"));
+    platforms.push(makePlatform(700, 135, 210, 135, "hill"));
+    platforms.push(makePlatform(930, 200, 265, 200, "hill"));
+
+    // 높은 언덕에서 내려오는 연결 지면
+    platforms.push(makePlatform(1195, 0, 400, 70, "ground"));
+
+    // 구덩이: 1595 ~ 1825 사이에는 지면 없음
+    platforms.push(makePlatform(1825, 0, 300, 70, "ground"));
+
+    // 두 번째 구간: 언덕 4개
+    platforms.push(makePlatform(2125, 75, 185, 75, "hill"));
+    platforms.push(makePlatform(2330, 145, 180, 145, "hill"));
+    platforms.push(makePlatform(2530, 80, 190, 80, "hill"));
+    platforms.push(makePlatform(2740, 165, 230, 165, "hill"));
+
+    // 성 앞 평지
+    platforms.push(makePlatform(2970, 0, 1330, 70, "ground"));
+
+    // 악당 배치
+    addEnemy(295, groundY - 32, 255, 420);
+    addEnemy(540, groundY - 70 - 32, 500, 635);
+    addEnemy(815, groundY - 135 - 32, 730, 875);
+    addEnemy(1310, groundY - 32, 1240, 1510);
+    addEnemy(1900, groundY - 32, 1860, 2060);
+    addEnemy(2200, groundY - 75 - 32, 2160, 2270);
+    addEnemy(2425, groundY - 145 - 32, 2370, 2470);
+    addEnemy(2620, groundY - 80 - 32, 2570, 2680);
+    addEnemy(2840, groundY - 165 - 32, 2780, 2930);
+    addEnemy(3160, groundY - 32, 3090, 3290);
+    addEnemy(3480, groundY - 32, 3410, 3600);
+
+    // 배경 구름
+    const cloudData = [
+      [120, 110, 1.0], [510, 155, 0.75], [940, 90, 1.15],
+      [1440, 135, 0.8], [1900, 75, 1.05], [2380, 125, 0.7],
+      [2820, 80, 1.15], [3370, 145, 0.9], [3900, 105, 1.1]
+    ];
+
+    clouds = cloudData.map(c => ({ x: c[0], y: c[1], s: c[2] }));
+  }
+
+  function addEnemy(x, y, minX, maxX) {
+    enemies.push({
+      x,
+      y,
+      w: 34,
+      h: 32,
+      vx: 65,
+      minX,
+      maxX,
+      alive: true,
+      squish: 0
+    });
+  }
+
+  function resetGame() {
+    score = 0;
+    elapsed = 0;
+    cameraX = 0;
+    jumpRequested = false;
+
+    createWorld();
+
+    player = {
+      x: 95,
+      y: groundY - 48,
+      w: 34,
+      h: 48,
+      vx: 0,
+      vy: 0,
+      onGround: false,
+      facing: 1,
+      invincible: 0,
+      walkTime: 0
+    };
+
+    updateHud();
+  }
+
+  function updateHud() {
+    scoreEl.textContent = String(score).padStart(6, "0");
+    enemyCountEl.textContent = enemies.filter(e => e.alive).length;
+  }
+
+  /* =========================
+     입력: 키보드
+     ========================= */
+  window.addEventListener("keydown", (e) => {
+    if (["ArrowLeft", "ArrowRight", " ", "Spacebar"].includes(e.key)) {
+      e.preventDefault();
+    }
+
+    if (e.key === "ArrowLeft") keys.left = true;
+    if (e.key === "ArrowRight") keys.right = true;
+
+    if (e.key === " " || e.key === "Spacebar" || e.key === "ArrowUp") {
+      if (!keys.jump) jumpRequested = true;
+      keys.jump = true;
+    }
+
+    if (gameState === "title" && (e.key === "Enter" || e.key === " ")) {
+      startGame();
+    }
+
+    if ((gameState === "won" || gameState === "lost") && e.key.toLowerCase() === "r") {
+      startGame();
+    }
+  });
+
+  window.addEventListener("keyup", (e) => {
+    if (e.key === "ArrowLeft") keys.left = false;
+    if (e.key === "ArrowRight") keys.right = false;
+    if (e.key === " " || e.key === "Spacebar" || e.key === "ArrowUp") {
+      keys.jump = false;
+    }
+  });
+
+  /* =========================
+     입력: 모바일 터치
+     화면을 가로로 3등분
+     ========================= */
+  function clearTouchInput() {
+    keys.left = false;
+    keys.right = false;
+    keys.jump = false;
+
+    zoneLeft.classList.remove("active");
+    zoneJump.classList.remove("active");
+    zoneRight.classList.remove("active");
+  }
+
+  function applyTouchAt(clientX) {
+    const third = W / 3;
+
+    clearTouchInput();
+
+    if (clientX < third) {
+      keys.left = true;
+      zoneLeft.classList.add("active");
+    } else if (clientX > third * 2) {
+      keys.right = true;
+      zoneRight.classList.add("active");
+    } else {
+      keys.jump = true;
+      jumpRequested = true;
+      zoneJump.classList.add("active");
+    }
+  }
+
+  canvas.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+
+    if (gameState === "title") {
+      startGame();
+      return;
+    }
+
+    if (gameState === "won" || gameState === "lost") {
+      startGame();
+      return;
+    }
+
+    canvas.setPointerCapture?.(e.pointerId);
+    applyTouchAt(e.clientX);
+  });
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (e.buttons || e.pressure > 0) {
+      applyTouchAt(e.clientX);
+    }
+  });
+
+  canvas.addEventListener("pointerup", clearTouchInput);
+  canvas.addEventListener("pointercancel", clearTouchInput);
+  window.addEventListener("blur", clearTouchInput);
+
+  /* =========================
+     충돌 관련 함수
+     ========================= */
+  function overlaps(a, b) {
+    return (
+      a.x < b.x + b.w &&
+      a.x + a.w > b.x &&
+      a.y < b.y + b.h &&
+      a.y + a.h > b.y
+    );
+  }
+
+  function isStandingOnPlatform(entity, platform) {
+    const feet = entity.y + entity.h;
+    return (
+      entity.x + entity.w > platform.x &&
+      entity.x < platform.x + platform.w &&
+      Math.abs(feet - platform.y) < 3
+    );
+  }
+
+  function findGroundUnder(x, width) {
+    let best = null;
+
+    for (const p of platforms) {
+      if (x + width > p.x && x < p.x + p.w) {
+        if (!best || p.y < best.y) best = p;
+      }
+    }
+
+    return best;
+  }
+
+  /* =========================
+     게임 업데이트
+     ========================= */
+  function update(dt) {
+    if (gameState !== "playing") return;
+
+    elapsed += dt;
+
+    // 좌우 이동
+    let direction = 0;
+    if (keys.left) direction -= 1;
+    if (keys.right) direction += 1;
+
+    if (direction !== 0) {
+      player.vx += direction * 2200 * dt;
+      player.vx = Math.max(-MOVE_SPEED, Math.min(MOVE_SPEED, player.vx));
+      player.facing = direction;
+      player.walkTime += dt * 13;
+    } else {
+      player.vx *= Math.pow(FRICTION, dt * 60);
+      if (Math.abs(player.vx) < 3) player.vx = 0;
+    }
+
+    // 점프: 땅 위일 때만 가능
+    if (jumpRequested && player.onGround) {
+      player.vy = -JUMP_POWER;
+      player.onGround = false;
+      addFloatingText("점프!", player.x + 2, player.y - 18, "#ffffff", 0.45);
+    }
+    jumpRequested = false;
+
+    // 중력 및 X 이동
+    player.vy += GRAVITY * dt;
+    player.vy = Math.min(player.vy, 1100);
+
+    player.x += player.vx * dt;
+    player.x = Math.max(-50, Math.min(WORLD_WIDTH - player.w, player.x));
+
+    // Y 이동 전의 위치 보관
+    const oldY = player.y;
+    player.y += player.vy * dt;
+    player.onGround = false;
+
+    // 플랫폼 위 착지 판정
+    if (player.vy >= 0) {
+      for (const p of platforms) {
+        const wasAbove = oldY + player.h <= p.y + 4;
+        const nowBelowTop = player.y + player.h >= p.y;
+        const horizontal = player.x + player.w > p.x && player.x < p.x + p.w;
+
+        if (wasAbove && nowBelowTop && horizontal) {
+          player.y = p.y - player.h;
+          player.vy = 0;
+          player.onGround = true;
+          break;
+        }
+      }
+    }
+
+    // 바닥 아래로 빠지면 실패
+    if (player.y > groundY + 260) {
+      loseGame();
+      return;
+    }
+
+    // 적 이동 및 적 충돌
+    for (const enemy of enemies) {
+      if (!enemy.alive) continue;
+
+      enemy.x += enemy.vx * dt;
+
+      if (enemy.x <= enemy.minX) {
+        enemy.x = enemy.minX;
+        enemy.vx = Math.abs(enemy.vx);
+      }
+
+      if (enemy.x + enemy.w >= enemy.maxX) {
+        enemy.x = enemy.maxX - enemy.w;
+        enemy.vx = -Math.abs(enemy.vx);
+      }
+
+      if (overlaps(player, enemy)) {
+        const playerBottom = player.y + player.h;
+        const wasFalling = player.vy > 80;
+        const hitFromTop = playerBottom - enemy.y < 20;
+
+        if (wasFalling && hitFromTop) {
+          enemy.alive = false;
+          enemy.squish = 1;
+          player.vy = -430;
+          score += 100;
+          updateHud();
+          addFloatingText("+100", enemy.x - 4, enemy.y - 22, "#ffec4f", 0.8);
+        } else if (player.invincible <= 0) {
+          loseGame();
+          return;
+        }
+      }
+    }
+
+    // 성 도착 판정
+    if (player.x + player.w > 3970) {
+      winGame();
+      return;
+    }
+
+    // 카메라가 플레이어를 따라감
+    const desiredCamera = player.x - W * 0.36;
+    cameraX += (desiredCamera - cameraX) * Math.min(1, dt * 5);
+    cameraX = Math.max(0, Math.min(WORLD_WIDTH - W, cameraX));
+
+    // 떠오르는 점수 텍스트
+    floatingTexts = floatingTexts.filter(t => {
+      t.y -= 42 * dt;
+      t.life -= dt;
+      return t.life > 0;
+    });
+  }
+
+  function addFloatingText(text, x, y, color, life) {
+    floatingTexts.push({
+      text, x, y, color,
+      life,
+      maxLife: life
+    });
+  }
+
+  function startGame() {
+    resetGame();
+    gameState = "playing";
+    messageEl.classList.add("hidden");
+    lastTime = performance.now();
+  }
+
+  function winGame() {
+    if (gameState !== "playing") return;
+
+    gameState = "won";
+    clearTouchInput();
+
+    messageEl.innerHTML = `
+      <h1>스테이지 완료! 🏰</h1>
+      <p>성에 무사히 도착했습니다.</p>
+      <p>최종 점수: <strong>${String(score).padStart(6, "0")}점</strong></p>
+      <p>버튼을 누르거나 화면을 터치해 다시 시작할 수 있어요.</p>
+      <button id="restartButton">다시 플레이</button>
+    `;
+    messageEl.classList.remove("hidden");
+
+    document.getElementById("restartButton").addEventListener("click", startGame);
+  }
+
+  function loseGame() {
+    if (gameState !== "playing") return;
+
+    gameState = "lost";
+    clearTouchInput();
+
+    messageEl.innerHTML = `
+      <h1>앗, 다시 도전!</h1>
+      <p>구덩이에 빠지거나 악당과 부딪혔습니다.</p>
+      <p>악당은 <strong>위에서 밟아야</strong> 사라집니다.</p>
+      <button id="restartButton">다시 플레이</button>
+    `;
+    messageEl.classList.remove("hidden");
+
+    document.getElementById("restartButton").addEventListener("click", startGame);
+  }
+
+  startButton.addEventListener("click", startGame);
+
+  /* =========================
+     그리기 도우미
+     ========================= */
+  function roundedRect(x, y, w, h, r, fillStyle, strokeStyle, lineWidth = 1) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+
+    if (fillStyle) {
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+    }
+
+    if (strokeStyle) {
+      ctx.lineWidth = lineWidth;
+      ctx.strokeStyle = strokeStyle;
+      ctx.stroke();
+    }
+  }
+
+  function drawCloud(x, y, scale) {
+    x -= cameraX * 0.17;
+
+    // 화면 밖의 구름은 그리지 않음
+    if (x < -180 || x > W + 180) return;
+
+    ctx.fillStyle = "rgba(255,255,255,0.88)";
+    ctx.beginPath();
+    ctx.arc(x, y, 18 * scale, 0, Math.PI * 2);
+    ctx.arc(x + 24 * scale, y - 11 * scale, 25 * scale, 0, Math.PI * 2);
+    ctx.arc(x + 54 * scale, y, 19 * scale, 0, Math.PI * 2);
+    ctx.arc(x + 31 * scale, y + 10 * scale, 22 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawBackground() {
+    // 하늘 그라데이션
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, "#63c8ff");
+    sky.addColorStop(0.7, "#a4e4ff");
+    sky.addColorStop(1, "#d9f6ff");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    // 구름
+    for (const cloud of clouds) {
+      drawCloud(cloud.x, cloud.y, cloud.s);
+    }
+
+    // 멀리 있는 산
+    const mountainOffset = -(cameraX * 0.08) % 600;
+    for (let i = -1; i < 4; i++) {
+      const x = mountainOffset + i * 600;
+      ctx.fillStyle = "#79c97e";
+      ctx.beginPath();
+      ctx.moveTo(x, groundY);
+      ctx.lineTo(x + 220, groundY - 220);
+      ctx.lineTo(x + 460, groundY);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#64b96b";
+      ctx.beginPath();
+      ctx.moveTo(x + 250, groundY);
+      ctx.lineTo(x + 430, groundY - 155);
+      ctx.lineTo(x + 620, groundY);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  function drawPlatform(p) {
+    const x = p.x - cameraX;
+    const y = p.y;
+
+    if (x + p.w < -20 || x > W + 20) return;
+
+    // 흙 부분
+    ctx.fillStyle = "#a96135";
+    ctx.fillRect(x, y, p.w, p.h + 120);
+
+    // 흙의 어두운 아래 그림자
+    ctx.fillStyle = "#824223";
+    ctx.fillRect(x, y + 16, p.w, p.h + 120);
+
+    // 흙 메인색을 다시 조금 덮어서 층 표현
+    ctx.fillStyle = "#a96135";
+    ctx.fillRect(x, y + 19, p.w, p.h + 110);
+
+    // 잔디 윗면
+    ctx.fillStyle = "#45a94e";
+    ctx.fillRect(x, y, p.w, 18);
+
+    ctx.fillStyle = "#7add58";
+    ctx.fillRect(x, y, p.w, 7);
+
+    // 잔디 테두리
+    ctx.fillStyle = "#277b3c";
+    ctx.fillRect(x, y + 15, p.w, 4);
+
+    // 흙 점 무늬
+    ctx.fillStyle = "rgba(99, 48, 26, 0.42)";
+    for (let px = x + 18; px < x + p.w; px += 44) {
+      const py = y + 35 + ((Math.floor((px - x) / 44) % 2) * 14);
+      ctx.fillRect(px, py, 5, 5);
+      ctx.fillRect(px + 15, py + 24, 4, 4);
+    }
+  }
+
+  function drawCastle() {
+    const baseX = 3980 - cameraX;
+    const baseY = groundY - 230;
+
+    if (baseX < -300 || baseX > W + 300) return;
+
+    // 성 본체
+    ctx.fillStyle = "#d9dbe5";
+    ctx.fillRect(baseX, baseY + 55, 210, 175);
+
+    // 벽돌 무늬
+    ctx.strokeStyle = "#aab0c3";
+    ctx.lineWidth = 2;
+    for (let y = baseY + 78; y < baseY + 220; y += 27) {
+      ctx.beginPath();
+      ctx.moveTo(baseX, y);
+      ctx.lineTo(baseX + 210, y);
+      ctx.stroke();
+
+      for (let x = baseX + ((y / 27) % 2 ? 15 : 0); x < baseX + 210; x += 42) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - 27);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+    }
+
+    // 양쪽 탑
+    ctx.fillStyle = "#c7cad8";
+    ctx.fillRect(baseX - 24, baseY + 25, 55, 205);
+    ctx.fillRect(baseX + 178, baseY + 25, 55, 205);
+
+    // 탑 꼭대기
+    ctx.fillStyle = "#6754a5";
+    ctx.beginPath();
+    ctx.moveTo(baseX - 33, baseY + 27);
+    ctx.lineTo(baseX + 4, baseY - 30);
+    ctx.lineTo(baseX + 40, baseY + 27);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(baseX + 169, baseY + 27);
+    ctx.lineTo(baseX + 205, baseY - 30);
+    ctx.lineTo(baseX + 242, baseY + 27);
+    ctx.closePath();
+    ctx.fill();
+
+    // 중앙 지붕
+    ctx.fillStyle = "#5b4998";
+    ctx.beginPath();
+    ctx.moveTo(baseX + 45, baseY + 57);
+    ctx.lineTo(baseX + 105, baseY - 4);
+    ctx.lineTo(baseX + 165, baseY + 57);
+    ctx.closePath();
+    ctx.fill();
+
+    // 문
+    roundedRect(baseX + 78, baseY + 165, 54, 65, 28, "#71452f", "#4a2b1e", 3);
+    ctx.fillStyle = "#ffdc49";
+    ctx.beginPath();
+    ctx.arc(baseX + 119, baseY + 199, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 창문
+    ctx.fillStyle = "#4a78b9";
+    roundedRect(baseX - 9, baseY + 75, 22, 37, 10, "#4a78b9", "#303d77", 2);
+    roundedRect(baseX + 94, baseY + 78, 22, 37, 10, "#4a78b9", "#303d77", 2);
+    roundedRect(baseX + 197, baseY + 75, 22, 37, 10, "#4a78b9", "#303d77", 2);
+
+    // 깃발
+    ctx.strokeStyle = "#5f6373";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(baseX + 205, baseY - 30);
+    ctx.lineTo(baseX + 205, baseY - 85);
+    ctx.stroke();
+
+    ctx.fillStyle = "#ff5665";
+    ctx.beginPath();
+    ctx.moveTo(baseX + 205, baseY - 84);
+    ctx.lineTo(baseX + 250, baseY - 70);
+    ctx.lineTo(baseX + 205, baseY - 53);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawEnemy(enemy) {
+    if (!enemy.alive) return;
+
+    const x = enemy.x - cameraX;
+    const y = enemy.y;
+
+    if (x + enemy.w < -30 || x > W + 30) return;
+
+    // 빨간 네모 악당
+    roundedRect(x, y, enemy.w, enemy.h, 6, "#e8484d", "#862b35", 3);
+
+    // 뿔
+    ctx.fillStyle = "#f7e4bd";
+    ctx.beginPath();
+    ctx.moveTo(x + 5, y + 2);
+    ctx.lineTo(x + 10, y - 8);
+    ctx.lineTo(x + 15, y + 2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(x + 20, y + 2);
+    ctx.lineTo(x + 25, y - 8);
+    ctx.lineTo(x + 30, y + 2);
+    ctx.closePath();
+    ctx.fill();
+
+    // 눈
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x + 7, y + 10, 7, 9);
+    ctx.fillRect(x + 21, y + 10, 7, 9);
+    ctx.fillStyle = "#1d2632";
+    ctx.fillRect(x + 10, y + 13, 3, 4);
+    ctx.fillRect(x + 22, y + 13, 3, 4);
+
+    // 입
+    ctx.strokeStyle = "#7a1f2c";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + 10, y + 25);
+    ctx.lineTo(x + 24, y + 25);
+    ctx.stroke();
+  }
+
+  function drawPlayer() {
+    const x = player.x - cameraX;
+    const y = player.y;
+    const bounce = player.onGround && Math.abs(player.vx) > 35 ? Math.sin(player.walkTime) * 1.5 : 0;
+
+    // 다리
+    ctx.fillStyle = "#283d9b";
+    ctx.fillRect(x + 6, y + 39 + bounce, 9, 11);
+    ctx.fillRect(x + 20, y + 39 - bounce, 9, 11);
+
+    // 몸통 - 파란 작업복 느낌
+    roundedRect(x + 3, y + 19, 28, 23, 5, "#2874d8", "#163d80", 2);
+
+    // 팔
+    ctx.fillStyle = "#f5b17e";
+    ctx.fillRect(x - 2, y + 23, 7, 13);
+    ctx.fillRect(x + 29, y + 23, 7, 13);
+
+    // 머리
+    roundedRect(x + 5, y + 5, 24, 20, 8, "#f6b27d", "#833e2d", 2);
+
+    // 빨간 모자
+    roundedRect(x + 2, y, 30, 12, 7, "#e84043", "#952c35", 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(x + 17, y + 6, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#d1323b";
+    ctx.font = "bold 7px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("P", x + 17, y + 6.5);
+
+    // 얼굴과 눈
+    ctx.fillStyle = "#26334a";
+    const eyeX = player.facing === 1 ? x + 22 : x + 10;
+    ctx.fillRect(eyeX, y + 12, 3, 5);
+
+    // 작은 코
+    ctx.fillStyle = "#dc825f";
+    ctx.fillRect(player.facing === 1 ? x + 27 : x + 4, y + 17, 4, 4);
+  }
+
+  function drawFloatingTexts() {
+    ctx.font = "bold 20px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    for (const text of floatingTexts) {
+      const alpha = Math.max(0, text.life / text.maxLife);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "#1b314b";
+      ctx.fillText(text.text, text.x - cameraX + 2, text.y + 2);
+      ctx.fillStyle = text.color;
+      ctx.fillText(text.text, text.x - cameraX, text.y);
+    }
+
+    ctx.globalAlpha = 1;
+  }
+
+  function draw() {
+    drawBackground();
+
+    // 모든 지형
+    for (const p of platforms) drawPlatform(p);
+
+    // 성은 지형 위에
+    drawCastle();
+
+    // 적
+    for (const enemy of enemies) drawEnemy(enemy);
+
+    // 플레이어
+    if (player) drawPlayer();
+
+    // 점수 텍스트
+    drawFloatingTexts();
+
+    // 시작 화면에서도 간단한 안내 배경을 자연스럽게 보여 주기
+    if (gameState === "title") {
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  /* =========================
+     메인 루프
+     ========================= */
+  function loop(now) {
+    const rawDt = (now - lastTime) / 1000;
+    const dt = Math.min(rawDt || 0, 0.033);
+    lastTime = now;
+
+    update(dt);
+    draw();
+
+    requestAnimationFrame(loop);
+  }
+
+  // 최초 월드 구성
+  resize();
+  resetGame();
+  requestAnimationFrame((time) => {
+    lastTime = time;
+    loop(time);
+  });
+})();
+</script>
+</body>
+</html>
