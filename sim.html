@@ -1,0 +1,1201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>심심한 하루 — 나의 리틀 심 라이프</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-navy:#0b2f2c;
+    --bg-navy-2:#0e3a35;
+    --panel-dark:#123b34;
+    --panel-darker:#0d2e29;
+    --panel-border:#2f6b57;
+    --cream:#f3ead6;
+    --cream-dim:#cdd8c9;
+    --gold:#e8c657;
+    --mood-green:#52e07a;
+    --mood-red:#ef4d4d;
+    --ink:#0a201c;
+    --font-display:'Press Start 2P', monospace;
+    --font-body:'Nunito', system-ui, sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #164a41 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, #0f3d38 0%, transparent 55%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0 2px, transparent 2px 26px),
+      var(--bg-navy);
+    font-family:var(--font-body);
+    color:var(--cream);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+
+  .app{
+    width:100%;
+    max-width:1080px;
+  }
+
+  /* ---------- 타이틀바 ---------- */
+  .titlebar{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    margin-bottom:14px;
+    padding:0 4px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .titlebar h1{
+    font-family:var(--font-display);
+    font-size:22px;
+    margin:0;
+    color:var(--gold);
+    text-shadow:2px 2px 0 var(--ink), 0 0 18px rgba(232,198,87,0.25);
+    letter-spacing:1px;
+  }
+  .titlebar .tagline{
+    font-size:13px;
+    color:var(--cream-dim);
+    margin-top:6px;
+  }
+  .titlebar .diamondMark{
+    display:inline-block;
+    width:12px;height:12px;
+    background:var(--mood-green);
+    transform:rotate(45deg);
+    margin:0 6px;
+    box-shadow:0 0 10px var(--mood-green);
+    vertical-align:middle;
+  }
+
+  /* ---------- 메인 레이아웃 ---------- */
+  .mainArea{
+    display:grid;
+    grid-template-columns: 1fr 300px;
+    gap:16px;
+  }
+  @media (max-width: 780px){
+    .mainArea{ grid-template-columns:1fr; }
+  }
+
+  .stage{
+    position:relative;
+    background:
+      linear-gradient(180deg, #0a2c27, #0a2622);
+    border:3px solid var(--panel-border);
+    border-radius:14px;
+    padding:14px;
+    box-shadow:
+      inset 0 0 0 2px rgba(0,0,0,0.35),
+      0 14px 32px rgba(0,0,0,0.45);
+  }
+
+  #gameCanvas{
+    display:block;
+    width:100%;
+    height:auto;
+    border-radius:8px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.06);
+    cursor:pointer;
+    background:#456;
+    image-rendering:pixelated;
+  }
+
+  #actionBar{
+    margin-top:10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--panel-darker);
+    border:2px solid var(--panel-border);
+    border-radius:10px;
+    padding:8px 12px;
+    font-size:13px;
+  }
+  #actionLabel{ font-weight:700; color:var(--cream); }
+  #cancelActionBtn{
+    background:var(--mood-red);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:6px 12px;
+    font-family:var(--font-body);
+    font-weight:800;
+    cursor:pointer;
+    font-size:12px;
+  }
+  #cancelActionBtn.hidden{ display:none; }
+
+  .stageHint{
+    margin-top:8px;
+    font-size:11.5px;
+    color:var(--cream-dim);
+    opacity:0.85;
+    line-height:1.5;
+  }
+
+  /* ---------- 사이드 패널 ---------- */
+  .panel{
+    background:linear-gradient(180deg, var(--panel-dark), var(--panel-darker));
+    border:3px solid var(--panel-border);
+    border-radius:14px;
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    box-shadow:0 14px 32px rgba(0,0,0,0.45), inset 0 0 0 2px rgba(0,0,0,0.3);
+    max-height:640px;
+  }
+
+  .panelSection{
+    background:rgba(0,0,0,0.18);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;
+    padding:10px 12px;
+  }
+
+  .clockRow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  #clockText{
+    font-family:var(--font-display);
+    font-size:16px;
+    color:var(--cream);
+  }
+  #dateLabel{
+    font-size:11px;
+    color:var(--cream-dim);
+    margin-top:4px;
+  }
+
+  .statRow{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:8px;
+    font-size:13px;
+  }
+  .statRow .label{ color:var(--cream-dim); }
+  #moneyText{ color:var(--gold); font-weight:800; font-family:var(--font-display); font-size:13px; }
+  #moodText{ font-weight:800; }
+
+  .speedRow{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+  }
+  .speedBtn{
+    flex:1;
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--panel-border);
+    color:var(--cream);
+    border-radius:7px;
+    padding:7px 0;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:700;
+    transition:background 0.15s, transform 0.1s;
+  }
+  .speedBtn:hover{ background:rgba(255,255,255,0.14); }
+  .speedBtn:active{ transform:scale(0.94); }
+  .speedBtn.active{
+    background:var(--mood-green);
+    color:#07341c;
+    border-color:var(--mood-green);
+  }
+
+  .needsTitle, .logTitle{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--cream-dim);
+    margin:0 0 8px 0;
+  }
+
+  .needItem{ margin-bottom:9px; }
+  .needItem:last-child{ margin-bottom:0; }
+  .needLabelRow{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    margin-bottom:3px;
+    color:var(--cream-dim);
+  }
+  .needTrack{
+    height:9px;
+    background:rgba(0,0,0,0.4);
+    border-radius:5px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  .needFill{
+    height:100%;
+    width:70%;
+    background:var(--mood-green);
+    transition:width 0.4s ease, background 0.4s ease;
+    border-radius:5px;
+  }
+
+  .logSection{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:150px;
+  }
+  #logList{
+    list-style:none;
+    margin:0;
+    padding:0;
+    overflow-y:auto;
+    font-size:12px;
+    line-height:1.6;
+    color:var(--cream-dim);
+    flex:1;
+    max-height:220px;
+  }
+  #logList li{
+    padding:4px 0;
+    border-bottom:1px dashed rgba(255,255,255,0.08);
+  }
+  #logList li:first-child{
+    color:var(--cream);
+    font-weight:700;
+  }
+  #logList::-webkit-scrollbar{ width:6px; }
+  #logList::-webkit-scrollbar-thumb{ background:var(--panel-border); border-radius:4px; }
+
+  /* ---------- 인트로 오버레이 ---------- */
+  #introOverlay{
+    position:fixed; inset:0;
+    background:rgba(6,20,18,0.88);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  #introOverlay.hidden{ display:none; }
+  .introBox{
+    background:linear-gradient(180deg, var(--panel-dark), var(--panel-darker));
+    border:3px solid var(--gold);
+    border-radius:16px;
+    max-width:480px;
+    width:100%;
+    padding:26px 26px 22px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  .introBox h2{
+    font-family:var(--font-display);
+    font-size:16px;
+    color:var(--gold);
+    margin:0 0 14px 0;
+    line-height:1.6;
+  }
+  .introBox p{
+    font-size:13.5px;
+    line-height:1.75;
+    color:var(--cream-dim);
+    margin:0 0 10px 0;
+  }
+  .introBox ul{
+    margin:0 0 16px 0;
+    padding-left:18px;
+    font-size:13px;
+    line-height:1.9;
+    color:var(--cream);
+  }
+  #startBtn{
+    width:100%;
+    background:var(--mood-green);
+    color:#07341c;
+    border:none;
+    border-radius:9px;
+    padding:12px 0;
+    font-family:var(--font-display);
+    font-size:13px;
+    cursor:pointer;
+    box-shadow:0 6px 0 #2e8f52;
+    transition:transform 0.08s;
+  }
+  #startBtn:active{ transform:translateY(4px); box-shadow:0 2px 0 #2e8f52; }
+
+  .footNote{
+    text-align:center;
+    font-size:11px;
+    color:rgba(243,234,214,0.35);
+    margin-top:14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="titlebar">
+    <div>
+      <h1><span class="diamondMark"></span>심심한 하루</h1>
+      <div class="tagline">나의 리틀 심 라이프 · 가구를 클릭해서 심을 돌봐주세요</div>
+    </div>
+  </div>
+
+  <div class="mainArea">
+    <div class="stage">
+      <canvas id="gameCanvas"></canvas>
+      <div id="actionBar">
+        <span id="actionLabel">🙂 대기 중</span>
+        <button id="cancelActionBtn" class="hidden">멈추기</button>
+      </div>
+      <div class="stageHint">
+        💡 침대·냉장고·화장실·샤워부스·TV·스테레오·책장·소파·전화기를 클릭하면 심이 걸어가서 사용해요.
+        평일 오전 9시~9시 30분 사이에 현관문을 클릭하면 출근합니다.
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div class="panelSection">
+        <div class="clockRow">
+          <div>
+            <div id="clockText">오전 8:00</div>
+            <div id="dateLabel">Day 1 · 월요일</div>
+          </div>
+        </div>
+        <div class="statRow">
+          <span class="label">💰 소지금</span>
+          <span id="moneyText">500§</span>
+        </div>
+        <div class="statRow">
+          <span class="label">💎 기분</span>
+          <span id="moodText">좋음</span>
+        </div>
+        <div class="speedRow">
+          <button class="speedBtn" data-speed="0">⏸</button>
+          <button class="speedBtn active" data-speed="1">▶</button>
+          <button class="speedBtn" data-speed="2">▶▶</button>
+          <button class="speedBtn" data-speed="3">▶▶▶</button>
+        </div>
+      </div>
+
+      <div class="panelSection">
+        <p class="needsTitle">욕구 상태</p>
+        <div id="needsList">
+          <div class="needItem">
+            <div class="needLabelRow"><span>🍔 배고픔</span></div>
+            <div class="needTrack"><div class="needFill" id="bar_hunger"></div></div>
+          </div>
+          <div class="needItem">
+            <div class="needLabelRow"><span>⚡ 에너지</span></div>
+            <div class="needTrack"><div class="needFill" id="bar_energy"></div></div>
+          </div>
+          <div class="needItem">
+            <div class="needLabelRow"><span>🚽 방광</span></div>
+            <div class="needTrack"><div class="needFill" id="bar_bladder"></div></div>
+          </div>
+          <div class="needItem">
+            <div class="needLabelRow"><span>🛁 위생</span></div>
+            <div class="needTrack"><div class="needFill" id="bar_hygiene"></div></div>
+          </div>
+          <div class="needItem">
+            <div class="needLabelRow"><span>🎉 재미</span></div>
+            <div class="needTrack"><div class="needFill" id="bar_fun"></div></div>
+          </div>
+          <div class="needItem">
+            <div class="needLabelRow"><span>💬 사교</span></div>
+            <div class="needTrack"><div class="needFill" id="bar_social"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panelSection logSection">
+        <p class="logTitle">📜 오늘의 기록</p>
+        <ul id="logList"></ul>
+      </div>
+    </aside>
+  </div>
+
+  <div class="footNote">HTML · CSS · JS로만 만든 작은 생활 시뮬레이션 · 저장 기능은 없어요, 새로고침하면 처음부터 시작합니다</div>
+</div>
+
+<div id="introOverlay">
+  <div class="introBox">
+    <h2>심심한<br/>하루</h2>
+    <p>작은 집에 사는 심을 돌봐주는 하루살이 생활 시뮬레이션이에요. 심 머리 위의 초록 다이아몬드는 기분을 나타내며, 상태가 나빠질수록 붉은색으로 변해요.</p>
+    <ul>
+      <li>가구를 클릭하면 심이 걸어가서 자동으로 사용해요</li>
+      <li>욕구가 0이 되면 심이 쓰러지니 미리미리 채워주세요</li>
+      <li>평일 오전 9:00~9:30, 현관문을 클릭하면 출근해요</li>
+      <li>퇴근하면 그날의 컨디션에 따라 급여를 받아요</li>
+    </ul>
+    <button id="startBtn">시작하기 ▶</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   심심한 하루 — a tiny Sims-1-flavored life sim
+   Pure HTML / CSS / JS, single file, no external dependencies
+   beyond an optional web font (falls back gracefully offline).
+   ========================================================= */
+(function () {
+  'use strict';
+
+  /* ---------------------------------------------------------
+     1. 상수 & 데이터 정의
+  --------------------------------------------------------- */
+  const TILE = 46;
+  const COLS = 14;
+  const ROWS = 9;
+
+  const NEED_KEYS = ['hunger', 'energy', 'bladder', 'hygiene', 'fun', 'social'];
+
+  const NEED_META = {
+    hunger:  { label: '배고픔', icon: '🍔', verb: '식사를' },
+    energy:  { label: '에너지', icon: '⚡', verb: '잠을' },
+    bladder: { label: '방광',   icon: '🚽', verb: '볼일을' },
+    hygiene: { label: '위생',   icon: '🛁', verb: '샤워를' },
+    fun:     { label: '재미',   icon: '🎉', verb: '여가를' },
+    social:  { label: '사교',   icon: '💬', verb: '수다를' }
+  };
+
+  const DECAY = {
+    hunger: 0.050,
+    energy: 0.045,
+    bladder: 0.070,
+    hygiene: 0.035,
+    fun: 0.040,
+    social: 0.030
+  };
+
+  const WEEKDAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
+
+  const FURNITURE = [
+    { id: 'bed',       name: '더블 침대',   icon: '🛏️', x: 1,  y: 1, w: 2, h: 1, need: 'energy', rate: 0.60, color: '#8a6fbf', border: '#5f4a8c' },
+    { id: 'bookshelf', name: '책장',        icon: '📚', x: 0,  y: 0, w: 1, h: 1, need: 'fun',     rate: 0.55, color: '#b1793f', border: '#7d5327' },
+    { id: 'toilet',    name: '변기',        icon: '🚽', x: 11, y: 1, w: 1, h: 1, need: 'bladder', rate: 3.20, color: '#dff1f3', border: '#8fb9bf' },
+    { id: 'shower',    name: '샤워부스',    icon: '🚿', x: 12, y: 2, w: 1, h: 1, need: 'hygiene', rate: 1.45, color: '#cfe9ec', border: '#7fa9af' },
+    { id: 'fridge',    name: '냉장고',      icon: '🧊', x: 1,  y: 6, w: 1, h: 1, need: 'hunger',  rate: 1.20, color: '#e7e9ee', border: '#a9adbb' },
+    { id: 'tv',        name: '텔레비전',    icon: '📺', x: 7,  y: 6, w: 2, h: 1, need: 'fun',     rate: 1.00, color: '#3d3d46', border: '#1f1f26' },
+    { id: 'stereo',    name: '스테레오',    icon: '🎵', x: 10, y: 6, w: 1, h: 1, need: 'fun',     rate: 0.70, color: '#c26b6b', border: '#8c4646' },
+    { id: 'phone',     name: '전화기',      icon: '☎️', x: 6,  y: 8, w: 1, h: 1, need: 'social',  rate: 1.10, color: '#e0c25a', border: '#a8912f' },
+    { id: 'sofa',      name: '소파',        icon: '🛋️', x: 8,  y: 8, w: 2, h: 1, need: 'fun',     rate: 0.80, color: '#c9975c', border: '#8f6a3c' },
+    { id: 'door',      name: '현관문',      icon: '🚪', x: 0,  y: 8, w: 1, h: 1, need: null,      rate: 0,    color: '#8a5a35', border: '#5c3a20' }
+  ];
+
+  function zoneColorFor(x, y) {
+    if (x <= 4 && y <= 3) return '#5f4f82';
+    if (x >= 9 && y <= 3) return '#bfe1e6';
+    if (x <= 4 && y >= 5) return '#f0e2ac';
+    if (x >= 6 && y >= 5) return '#c9975c';
+    return '#7a8a86';
+  }
+
+  /* ---------------------------------------------------------
+     2. 상태
+  --------------------------------------------------------- */
+  const blocked = new Map();
+  FURNITURE.forEach(f => {
+    for (let dx = 0; dx < f.w; dx++) {
+      for (let dy = 0; dy < f.h; dy++) {
+        blocked.set((f.x + dx) + ',' + (f.y + dy), f);
+      }
+    }
+  });
+
+  const needs = { hunger: 78, energy: 82, bladder: 70, hygiene: 75, fun: 65, social: 60 };
+  let money = 500;
+  let gameMinutes = 8 * 60;
+  let dayIndex = 0;
+  let totalDays = 1;
+  let speedIndex = 1;
+  let moodAvg = 75;
+  let workState = null;
+  let performanceSnapshot = 75;
+  let currentAction = null;
+
+  const flags = { carHonked: false, carWindowOpen: false, weekendNoted: false };
+
+  const sim = {
+    tx: 6, ty: 4, px: 0, py: 0,
+    path: [], pendingArrive: null,
+    dir: 'down', moving: false,
+    action: null, asleep: false,
+    fainted: false, faintNeed: null,
+    visible: true
+  };
+  sim.px = sim.tx * TILE + TILE / 2;
+  sim.py = sim.ty * TILE + TILE / 2;
+
+  /* ---------------------------------------------------------
+     3. 유틸리티
+  --------------------------------------------------------- */
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function keyOf(x, y) { return x + ',' + y; }
+  function inBounds(x, y) { return x >= 0 && x < COLS && y >= 0 && y < ROWS; }
+
+  function bfsPath(start, isGoal) {
+    if (isGoal(start.x, start.y)) return [];
+    const visited = new Set([keyOf(start.x, start.y)]);
+    const queue = [{ x: start.x, y: start.y, path: [] }];
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while (queue.length) {
+      const cur = queue.shift();
+      for (let i = 0; i < dirs.length; i++) {
+        const nx = cur.x + dirs[i][0], ny = cur.y + dirs[i][1];
+        if (!inBounds(nx, ny)) continue;
+        const k = keyOf(nx, ny);
+        if (visited.has(k)) continue;
+        if (blocked.has(k)) continue;
+        visited.add(k);
+        const newPath = cur.path.concat([{ x: nx, y: ny }]);
+        if (isGoal(nx, ny)) return newPath;
+        queue.push({ x: nx, y: ny, path: newPath });
+      }
+    }
+    return null;
+  }
+
+  function adjacentGoalTest(f) {
+    const cells = new Set();
+    for (let dx = 0; dx < f.w; dx++) {
+      for (let dy = 0; dy < f.h; dy++) {
+        const fx = f.x + dx, fy = f.y + dy;
+        const around = [[1,0],[-1,0],[0,1],[0,-1]];
+        for (let i = 0; i < around.length; i++) {
+          const nx = fx + around[i][0], ny = fy + around[i][1];
+          if (inBounds(nx, ny) && !blocked.has(keyOf(nx, ny))) cells.add(keyOf(nx, ny));
+        }
+      }
+    }
+    return function (x, y) { return cells.has(keyOf(x, y)); };
+  }
+
+  function isWeekdayNow() { return dayIndex < 5; }
+
+  function nightAlpha(min) {
+    const h = min / 60;
+    if (h >= 7 && h <= 18) return 0;
+    if (h > 18 && h < 22) return (h - 18) / 4 * 0.55;
+    if (h >= 22 || h < 4) return 0.55;
+    if (h >= 4 && h < 7) return (1 - (h - 4) / 3) * 0.55;
+    return 0;
+  }
+
+  /* ---------------------------------------------------------
+     4. DOM 참조
+  --------------------------------------------------------- */
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = COLS * TILE;
+  canvas.height = ROWS * TILE;
+
+  const el = {
+    clock: document.getElementById('clockText'),
+    dateLabel: document.getElementById('dateLabel'),
+    money: document.getElementById('moneyText'),
+    mood: document.getElementById('moodText'),
+    log: document.getElementById('logList'),
+    speedBtns: Array.from(document.querySelectorAll('.speedBtn')),
+    bars: {},
+    intro: document.getElementById('introOverlay'),
+    startBtn: document.getElementById('startBtn'),
+    cancelBtn: document.getElementById('cancelActionBtn'),
+    actionLabel: document.getElementById('actionLabel')
+  };
+  NEED_KEYS.forEach(k => { el.bars[k] = document.getElementById('bar_' + k); });
+
+  /* ---------------------------------------------------------
+     5. 로그
+  --------------------------------------------------------- */
+  const logMessages = [];
+  function addLog(msg) {
+    logMessages.unshift(msg);
+    if (logMessages.length > 40) logMessages.pop();
+    renderLog();
+  }
+  function renderLog() {
+    el.log.innerHTML = logMessages.map(m => '<li>' + m + '</li>').join('');
+  }
+
+  const AMBIENT_LINES = [
+    '창밖에서 새가 지저귑니다.',
+    '심이 콧노래를 흥얼거립니다.',
+    '어디선가 시원한 바람이 붑니다.',
+    '냉장고가 웅웅거리는 소리를 냅니다.',
+    '먼지 한 톨이 햇빛 속을 떠다닙니다.',
+    '심이 발끝으로 리듬을 탑니다.'
+  ];
+
+  /* ---------------------------------------------------------
+     6. 액션 처리
+  --------------------------------------------------------- */
+  function cancelCurrentAction(silent) {
+    if (sim.asleep) {
+      sim.asleep = false;
+      if (!silent) addLog('🛏️ 잠에서 깼습니다.');
+    }
+    currentAction = null;
+    sim.action = null;
+    updateActionLabel();
+  }
+
+  function beginAction(f) {
+    currentAction = { obj: f, need: f.need, rate: f.rate };
+    sim.action = currentAction;
+    if (f.id === 'bed') sim.asleep = true;
+    const meta = NEED_META[f.need];
+    addLog(f.icon + ' ' + f.name + '(으)로 ' + meta.verb + ' 시작합니다...');
+    updateActionLabel();
+  }
+
+  function finishAction() {
+    const f = currentAction.obj;
+    const meta = NEED_META[currentAction.need];
+    addLog('✨ ' + f.icon + ' ' + f.name + ' 이용을 마쳤습니다. (' + meta.label + ' 회복!)');
+    cancelCurrentAction(true);
+  }
+
+  function updateActionLabel() {
+    if (!el.actionLabel) return;
+    if (sim.fainted) {
+      el.actionLabel.textContent = '😵 기절함';
+      el.cancelBtn.classList.add('hidden');
+    } else if (currentAction) {
+      el.actionLabel.textContent = currentAction.obj.icon + ' ' + currentAction.obj.name + ' 이용 중';
+      el.cancelBtn.classList.remove('hidden');
+    } else if (sim.path && sim.path.length) {
+      el.actionLabel.textContent = '🚶 이동 중...';
+      el.cancelBtn.classList.add('hidden');
+    } else if (workState === 'atWork') {
+      el.actionLabel.textContent = '👔 근무 중';
+      el.cancelBtn.classList.add('hidden');
+    } else {
+      el.actionLabel.textContent = '🙂 대기 중';
+      el.cancelBtn.classList.add('hidden');
+    }
+  }
+
+  function moveSimTo(f, onArrive) {
+    const start = { x: sim.tx, y: sim.ty };
+    const goalTest = adjacentGoalTest(f);
+    if (goalTest(start.x, start.y)) { onArrive(); return; }
+    const path = bfsPath(start, goalTest);
+    if (!path) { addLog('🚫 ' + f.name + '에 다가갈 수 있는 길이 없어요.'); return; }
+    sim.path = path;
+    sim.pendingArrive = onArrive;
+    updateActionLabel();
+  }
+
+  function moveSimFree(tx, ty) {
+    if (blocked.has(keyOf(tx, ty))) return;
+    const start = { x: sim.tx, y: sim.ty };
+    const path = bfsPath(start, function (x, y) { return x === tx && y === ty; });
+    if (!path) return;
+    sim.path = path;
+    sim.pendingArrive = null;
+    updateActionLabel();
+  }
+
+  function interactWithObject(f) {
+    if (sim.fainted) { addLog('😵 심이 기절해서 반응이 없습니다...'); return; }
+    if (f.id === 'door') {
+      if (workState === 'atWork') return;
+      if (!isWeekdayNow()) { addLog('😴 오늘은 쉬는 날이라 출근할 필요가 없어요.'); return; }
+      if (!flags.carWindowOpen) { addLog('🚪 아직 통근차가 오지 않았어요. (평일 오전 9:00~9:30)'); return; }
+      cancelCurrentAction(true);
+      moveSimTo(f, departToWork);
+      return;
+    }
+    if (currentAction && currentAction.obj === f) {
+      cancelCurrentAction();
+      addLog('⏹️ ' + f.name + ' 사용을 멈췄습니다.');
+      return;
+    }
+    cancelCurrentAction();
+    moveSimTo(f, function () { beginAction(f); });
+  }
+
+  function departToWork() {
+    performanceSnapshot = (needs.hygiene + needs.fun + needs.energy + needs.social) / 4;
+    workState = 'atWork';
+    flags.carWindowOpen = false;
+    sim.visible = false;
+    addLog('👔 통근차를 타고 출근했습니다. 오늘 하루도 힘내세요!');
+    updateActionLabel();
+  }
+
+  function returnFromWork() {
+    workState = null;
+    sim.visible = true;
+    sim.tx = 1; sim.ty = 8;
+    sim.px = sim.tx * TILE + TILE / 2;
+    sim.py = sim.ty * TILE + TILE / 2;
+    const perf = clamp(performanceSnapshot / 100, 0.3, 1.4);
+    const pay = Math.round(140 * perf);
+    money += pay;
+    const grade = perf >= 1.05 ? '훌륭했어요 👍' : perf >= 0.7 ? '무난했어요' : '별로였어요 😬';
+    addLog('💰 퇴근했습니다! 급여로 ' + pay + '§를 받았습니다. (오늘의 컨디션: ' + grade + ')');
+    updateActionLabel();
+  }
+
+  function triggerFaint(type) {
+    if (type === 'bladder') {
+      needs.hygiene = clamp(needs.hygiene - 25, 0, 100);
+      needs.bladder = 25;
+      addLog('😳 앗! 심이 그만 실수를 하고 말았습니다...');
+      return;
+    }
+    cancelCurrentAction(true);
+    sim.fainted = true;
+    sim.faintNeed = type;
+    sim.path = [];
+    sim.pendingArrive = null;
+    if (type === 'energy') addLog('😵 심이 너무 피곤한 나머지 그 자리에서 쓰러졌습니다!');
+    else addLog('😵 배가 너무 고파서 심이 쓰러지고 말았습니다!');
+    updateActionLabel();
+  }
+
+  function checkFaintConditions() {
+    if (sim.fainted) {
+      needs[sim.faintNeed] = clamp(needs[sim.faintNeed] + 0.9, 0, 100);
+      if (needs[sim.faintNeed] >= 28) {
+        sim.fainted = false;
+        addLog('🙂 심이 겨우 정신을 차렸습니다.');
+        updateActionLabel();
+      }
+      return;
+    }
+    if (needs.energy <= 0) { triggerFaint('energy'); return; }
+    if (needs.hunger <= 0) { triggerFaint('hunger'); return; }
+    if (needs.bladder <= 0) { triggerFaint('bladder'); return; }
+  }
+
+  /* ---------------------------------------------------------
+     7. 시간 진행 / 욕구 감소 틱
+  --------------------------------------------------------- */
+  function resetDailyFlags() {
+    flags.carHonked = false;
+    flags.carWindowOpen = false;
+    flags.weekendNoted = false;
+  }
+
+  function applyNeedsDecay() {
+    const mult = workState === 'atWork' ? 0.5 : 1;
+    NEED_KEYS.forEach(key => {
+      if (currentAction && currentAction.need === key) {
+        needs[key] = clamp(needs[key] + currentAction.rate, 0, 100);
+        if (needs[key] >= 99.5) finishAction();
+      } else {
+        needs[key] = clamp(needs[key] - DECAY[key] * mult, 0, 100);
+      }
+    });
+    moodAvg = (needs.hunger + needs.energy + needs.bladder + needs.hygiene + needs.fun + needs.social) / 6;
+    checkFaintConditions();
+  }
+
+  function handleScheduleEvents() {
+    const weekday = isWeekdayNow();
+    if (weekday && gameMinutes === 9 * 60 && !flags.carHonked) {
+      flags.carHonked = true;
+      flags.carWindowOpen = true;
+      addLog('🚗 빵빵! 통근차가 도착했습니다. 문으로 가서 출근하세요! (9:30까지)');
+    }
+    if (weekday && gameMinutes === 9 * 60 + 30 && flags.carWindowOpen) {
+      flags.carWindowOpen = false;
+      money = Math.max(0, money - 40);
+      addLog('🚗 통근차가 그냥 떠났습니다. 결근 처리되어 40§를 잃었습니다.');
+    }
+    if (!weekday && gameMinutes === 9 * 60 && !flags.weekendNoted) {
+      flags.weekendNoted = true;
+      addLog('🎉 오늘은 ' + WEEKDAY_NAMES[dayIndex] + '요일! 출근하지 않아도 되는 날입니다.');
+    }
+    if (workState === 'atWork' && gameMinutes === 17 * 60) {
+      returnFromWork();
+    }
+  }
+
+  let ambientCooldown = 0;
+  function maybeAmbientFlavor() {
+    ambientCooldown--;
+    if (ambientCooldown <= 0) {
+      ambientCooldown = 90 + Math.floor(Math.random() * 120);
+      if (Math.random() < 0.5 && !sim.fainted) {
+        addLog('💭 ' + AMBIENT_LINES[Math.floor(Math.random() * AMBIENT_LINES.length)]);
+      }
+    }
+  }
+
+  function advanceGameMinute() {
+    gameMinutes++;
+    if (gameMinutes >= 1440) {
+      gameMinutes -= 1440;
+      dayIndex = (dayIndex + 1) % 7;
+      totalDays++;
+      resetDailyFlags();
+      addLog('🌅 ' + WEEKDAY_NAMES[dayIndex] + '요일 아침이 밝았습니다. (Day ' + totalDays + ')');
+    }
+    applyNeedsDecay();
+    handleScheduleEvents();
+    maybeAmbientFlavor();
+    updateStatsUI();
+  }
+
+  /* ---------------------------------------------------------
+     8. UI 갱신
+  --------------------------------------------------------- */
+  function formatClock() {
+    const h = Math.floor(gameMinutes / 60);
+    const m = gameMinutes % 60;
+    const ampm = h < 12 ? '오전' : '오후';
+    let h12 = h % 12; if (h12 === 0) h12 = 12;
+    return ampm + ' ' + h12 + ':' + String(m).padStart(2, '0');
+  }
+
+  function moodLabel() {
+    if (moodAvg >= 75) return { t: '아주 좋음', c: '#52e07a' };
+    if (moodAvg >= 50) return { t: '좋음', c: '#a3d95c' };
+    if (moodAvg >= 30) return { t: '보통', c: '#e8c657' };
+    if (moodAvg >= 15) return { t: '나쁨', c: '#e08a3f' };
+    return { t: '위험', c: '#ef4d4d' };
+  }
+
+  function updateStatsUI() {
+    el.clock.textContent = formatClock();
+    el.dateLabel.textContent = 'Day ' + totalDays + ' · ' + WEEKDAY_NAMES[dayIndex] + '요일';
+    el.money.textContent = money + '§';
+    const ml = moodLabel();
+    el.mood.textContent = ml.t;
+    el.mood.style.color = ml.c;
+    NEED_KEYS.forEach(k => {
+      const bar = el.bars[k];
+      if (!bar) return;
+      bar.style.width = needs[k] + '%';
+      bar.style.background = needs[k] < 20 ? '#ef4d4d' : needs[k] < 45 ? '#e08a3f' : '#52e07a';
+    });
+  }
+
+  /* ---------------------------------------------------------
+     9. 이동 애니메이션
+  --------------------------------------------------------- */
+  function updateMovement(dt, speedAnimFactor) {
+    if (!sim.path || sim.path.length === 0) { sim.moving = false; return; }
+    const next = sim.path[0];
+    const targetPx = next.x * TILE + TILE / 2;
+    const targetPy = next.y * TILE + TILE / 2;
+    const dx = targetPx - sim.px, dy = targetPy - sim.py;
+    const dist = Math.hypot(dx, dy);
+    const step = (TILE / 220) * dt * speedAnimFactor;
+    sim.moving = true;
+    if (Math.abs(dx) > Math.abs(dy)) sim.dir = dx > 0 ? 'right' : 'left';
+    else if (dy !== 0) sim.dir = dy > 0 ? 'down' : 'up';
+    if (dist <= step || dist === 0) {
+      sim.px = targetPx; sim.py = targetPy;
+      sim.tx = next.x; sim.ty = next.y;
+      sim.path.shift();
+      if (sim.path.length === 0) {
+        sim.moving = false;
+        const cb = sim.pendingArrive;
+        sim.pendingArrive = null;
+        updateActionLabel();
+        if (cb) cb();
+      }
+    } else {
+      sim.px += dx / dist * step;
+      sim.py += dy / dist * step;
+    }
+  }
+
+  /* ---------------------------------------------------------
+     10. 렌더링
+  --------------------------------------------------------- */
+  function roundRectPath(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawFloor() {
+    for (let x = 0; x < COLS; x++) {
+      for (let y = 0; y < ROWS; y++) {
+        ctx.fillStyle = zoneColorFor(x, y);
+        ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+        ctx.strokeRect(x * TILE, y * TILE, TILE, TILE);
+      }
+    }
+  }
+
+  function drawFurniture(time) {
+    FURNITURE.forEach(f => {
+      const x = f.x * TILE, y = f.y * TILE, w = f.w * TILE, h = f.h * TILE;
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      roundRectPath(x + 4, y + h - 10, w - 8, 10, 4);
+      ctx.fill();
+      ctx.fillStyle = f.color;
+      roundRectPath(x + 3, y + 3, w - 6, h - 6, 8);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = f.border;
+      roundRectPath(x + 3, y + 3, w - 6, h - 6, 8);
+      ctx.stroke();
+
+      let bob = 0;
+      if (currentAction && currentAction.obj === f) bob = Math.sin(time / 160) * 2;
+      ctx.font = (TILE * 0.5) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.icon, x + w / 2, y + h / 2 + bob);
+
+      if (flags.carWindowOpen && f.id === 'door') {
+        ctx.save();
+        ctx.globalAlpha = 0.55 + Math.sin(time / 150) * 0.35;
+        ctx.fillStyle = '#52e07a';
+        ctx.beginPath();
+        ctx.arc(x + w - 6, y + 6, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    });
+  }
+
+  function moodColor(v) {
+    const hue = clamp(v, 0, 100) * 1.2;
+    return 'hsl(' + hue + ', 80%, 52%)';
+  }
+
+  function drawSim(time) {
+    if (!sim.visible) return;
+    const bodyColor = '#4d8fe0';
+    const skinColor = '#f2c79a';
+    const px = sim.px, py = sim.py;
+
+    if (sim.fainted) {
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath(); ctx.ellipse(0, 10, 16, 6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.rotate(Math.PI / 2);
+      ctx.fillStyle = bodyColor;
+      roundRectPath(-14, -6, 28, 12, 6); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = skinColor;
+      ctx.beginPath(); ctx.arc(px + 16, py, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('💫', px, py - 22 + Math.sin(time / 120) * 3);
+      return;
+    }
+
+    const bobY = sim.moving ? Math.abs(Math.sin(time / 100)) * 3 : 0;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(px, py + 16, 13, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = bodyColor;
+    roundRectPath(px - 9, py - 6 - bobY, 18, 20, 7);
+    ctx.fill();
+    ctx.strokeStyle = '#2c5a91';
+    ctx.lineWidth = 1.5;
+    roundRectPath(px - 9, py - 6 - bobY, 18, 20, 7);
+    ctx.stroke();
+
+    ctx.fillStyle = skinColor;
+    ctx.beginPath();
+    ctx.arc(px, py - 16 - bobY, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#c99a6e';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    let eyeOffX = 0, eyeOffY = 0;
+    if (sim.dir === 'left') eyeOffX = -2.5;
+    else if (sim.dir === 'right') eyeOffX = 2.5;
+    else if (sim.dir === 'up') eyeOffY = -1.5;
+    else eyeOffY = 1.5;
+    ctx.fillStyle = '#2b2b2b';
+    ctx.beginPath();
+    ctx.arc(px - 3 + eyeOffX, py - 17 - bobY + eyeOffY, 1.4, 0, Math.PI * 2);
+    ctx.arc(px + 3 + eyeOffX, py - 17 - bobY + eyeOffY, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    drawDiamond(px, py - 34 - bobY, time);
+
+    if (currentAction) {
+      drawThoughtBubble(px + 16, py - 34 - bobY, currentAction.obj.icon, needs[currentAction.need] / 100);
+    }
+  }
+
+  function drawDiamond(cx, cy, time) {
+    const bob = Math.sin(time / 500) * 3;
+    const rot = Math.sin(time / 900) * 0.18;
+    ctx.save();
+    ctx.translate(cx, cy + bob);
+    ctx.rotate(Math.PI / 4 + rot);
+    const c = moodColor(moodAvg);
+    ctx.shadowColor = c;
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = c;
+    const s = 9;
+    ctx.fillRect(-s / 2, -s / 2, s, s);
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(-s / 2, -s / 2, s, s);
+    ctx.restore();
+  }
+
+  function drawThoughtBubble(x, y, icon, progress) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x, y, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, 11, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+    ctx.strokeStyle = '#52e07a';
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#222';
+    ctx.fillText(icon, x, y + 1);
+    ctx.restore();
+  }
+
+  function drawNightOverlay() {
+    const a = nightAlpha(gameMinutes);
+    if (a <= 0) return;
+    ctx.fillStyle = 'rgba(8, 12, 40, ' + a + ')';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function drawCarBanner(time) {
+    if (!flags.carWindowOpen) return;
+    ctx.save();
+    const alpha = 0.75 + Math.sin(time / 200) * 0.25;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#173';
+    ctx.fillRect(4, 4, 178, 20);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🚗 통근차 대기 중! 문으로 이동', 10, 14);
+    ctx.restore();
+  }
+
+  function render(time) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawFloor();
+    drawFurniture(time);
+    drawSim(time);
+    drawNightOverlay();
+    drawCarBanner(time);
+  }
+
+  /* ---------------------------------------------------------
+     11. 메인 루프
+  --------------------------------------------------------- */
+  const SPEED_INTERVALS = [0, 150, 70, 32];
+  const SPEED_ANIM = [0, 1, 1.7, 2.6];
+  let accumulator = 0;
+  let lastTime = null;
+  let paused = true;
+
+  function currentInterval() {
+    let base = SPEED_INTERVALS[speedIndex];
+    if (sim.asleep) base = Math.max(12, base / 4);
+    return base;
+  }
+
+  function loop(ts) {
+    if (lastTime === null) lastTime = ts;
+    const dt = ts - lastTime;
+    lastTime = ts;
+
+    if (!paused && speedIndex > 0) {
+      accumulator += dt;
+      const interval = currentInterval();
+      let guard = 0;
+      while (accumulator >= interval && guard < 500) {
+        accumulator -= interval;
+        advanceGameMinute();
+        guard++;
+      }
+      updateMovement(dt, SPEED_ANIM[speedIndex]);
+    }
+    render(ts);
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------------------------------------------------------
+     12. 입력 처리
+  --------------------------------------------------------- */
+  canvas.addEventListener('click', (e) => {
+    if (paused) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleY;
+
+    const distToSim = Math.hypot(mx - sim.px, my - sim.py);
+    if (distToSim < 16 && currentAction) {
+      cancelCurrentAction();
+      addLog('⏹️ 하던 일을 멈췄습니다.');
+      return;
+    }
+
+    const tx = Math.floor(mx / TILE), ty = Math.floor(my / TILE);
+    if (!inBounds(tx, ty)) return;
+    const f = blocked.get(keyOf(tx, ty));
+    if (f) interactWithObject(f);
+    else moveSimFree(tx, ty);
+  });
+
+  el.speedBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      speedIndex = parseInt(btn.dataset.speed, 10);
+      el.speedBtns.forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+
+  el.cancelBtn.addEventListener('click', () => {
+    cancelCurrentAction();
+    addLog('⏹️ 하던 일을 멈췄습니다.');
+  });
+
+  el.startBtn.addEventListener('click', () => {
+    el.intro.classList.add('hidden');
+    paused = false;
+    addLog('🏠 새로운 하루가 시작되었습니다. 가구를 클릭해 심을 도와주세요!');
+  });
+
+  /* ---------------------------------------------------------
+     13. 시작
+  --------------------------------------------------------- */
+  updateStatsUI();
+  updateActionLabel();
+  requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
