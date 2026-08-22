@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TF9 CTF - Web Edition</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0b0d12;
+    color: #eee;
+    font-family: 'Courier New', monospace;
+    display: flex; flex-direction: column; align-items: center;
+    overflow-x: hidden;
+  }
+  h1 {
+    font-size: 20px; letter-spacing: 2px; margin: 14px 0 6px;
+    color: #ffcf3d;
+  }
+  #gameWrap {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    line-height: 0;
+    border: 2px solid #333;
+    background: #000;
+  }
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    cursor: crosshair;
+  }
+  #controlBar {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    padding: 10px; max-width: 800px; width: 100%;
+  }
+  button {
+    font-family: inherit; font-size: 13px; letter-spacing: 1px;
+    background: #1c2430; color: #ffcf3d; border: 2px solid #ffcf3d;
+    padding: 8px 16px; cursor: pointer; border-radius: 3px;
+  }
+  button:hover { background: #ffcf3d; color: #1c2430; }
+  button:active { transform: translateY(1px); }
+  #hint {
+    max-width: 800px; width: 100%; padding: 0 14px 20px;
+    font-size: 12px; color: #9db0c2; text-align: center; line-height: 1.7;
+  }
+  #hint b { color: #ffd766; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<h1>TF9 CTF &mdash; WEB EDITION</h1>
+
+<div id="gameWrap">
+  <canvas id="game" width="800" height="450"></canvas>
+</div>
+
+<div id="controlBar">
+  <button id="fullscreenBtn">전체화면</button>
+  <button id="restartBtn" class="hidden">RESTART</button>
+  <button id="continueBtn" class="hidden">CONTINUE</button>
+  <button id="escapeBtn" class="hidden">ESCAPE</button>
+</div>
+
+<div id="hint">
+  <b>이동</b> 방향키 &nbsp;|&nbsp; <b>점프</b> X &nbsp;|&nbsp; <b>발사</b> Z (스나이퍼는 Z를 눌러 충전 후 떼면 발사)
+  &nbsp;|&nbsp; <b>무기 선택</b> 숫자 1&ndash;9<br>
+  <b>C + 좌/우</b> 대시 &nbsp;|&nbsp; <b>C + 위</b> 자가 치유(HP+20) &nbsp;|&nbsp; <b>C + 아래</b> (지상에서) 슈퍼 점프<br>
+  방 6(맨 오른쪽)에서 적 깃발을 먹고, 방 1(맨 왼쪽)의 내 기지로 돌아오면 승리! 방 2/5에서 아래키로, 터널에서 위키로 터널 이동 가능. 방 1에서 위키로 코인 10개 써서 레벨업.
+</div>
+
+<script>
+(function(){
+"use strict";
+
+// ---------- constants ----------
+const W = 800, H = 450, GY = 400, TUNNEL = 6, MAXE = 24, MAXP = 48, MAXC = 50;
+const wn = ["", "Scattergun", "Rocket", "Flamer", "Grenade", "Minigun", "Sentry", "Medi Gun", "Sniper", "Dual Pistol"];
+const bgColors = [
+  "rgb(26,39,51)", "rgb(32,35,43)", "rgb(35,42,32)", "rgb(42,38,32)",
+  "rgb(42,32,32)", "rgb(51,26,26)", "rgb(13,15,20)" // index 6 = tunnel
+];
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// ---------- audio ----------
+let actx = null;
+function ensureAudio() {
+  if (!actx) {
+    try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { actx = null; }
+  }
+}
+function tone(freq, durMs) {
+  if (!actx) return;
+  try {
+    const o = actx.createOscillator();
+    const g = actx.createGain();
+    o.type = "square";
+    o.frequency.value = freq;
+    g.gain.value = 0.045;
+    o.connect(g); g.connect(actx.destination);
+    const t = actx.currentTime;
+    g.gain.setValueAtTime(0.045, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (durMs || 12) / 1000);
+    o.start(t);
+    o.stop(t + (durMs || 12) / 1000 + 0.02);
+  } catch (e) { /* ignore */ }
+}
+
+// ---------- drawing helpers ----------
+function rect(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+function frame(x, y, w, h, c) { ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w, h); }
+function hitBox(ax, ay, aw, ah, bx, by, bw, bh) { return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by; }
+function text(x, y, c, s, size) {
+  ctx.fillStyle = c; ctx.font = (size || 13) + "px 'Courier New', monospace";
+  ctx.textBaseline = "top"; ctx.fillText(s, x, y);
+}
+
+// ---------- state ----------
+let room = 0, px = 80, py = 356, pvx = 0, pvy = 0, php = 100, face = 1, weapon = 1;
+let ground = false, flagTaken = false, won = false, zWas = false, dash = false;
+let dashTime = 0, invuln = 0, charge = 0, tick = 0;
+let playerCoins = 0, playerLevel = 1;
+let escapeSeq = 0, escapeTick = 0, fullscreenHideTick = 0;
+let oldRoom = -1;
+
+const key = {}; // key.ArrowLeft, key.KeyZ, etc
+
+const enemy = []; for (let i = 0; i < MAXE; i++) enemy.push({ room: 0, x: 0, y: 0, vx: 0, vy: 0, hp: 100, alive: false, kind: 0, sx: 0, dir: 0, flash: 0 });
+const shot = []; for (let i = 0; i < MAXP; i++) shot.push({ on: false, kind: 0, room: 0, x: 0, y: 0, vx: 0, vy: 0, life: 0, val: 0 });
+const coin = []; for (let i = 0; i < MAXC; i++) coin.push({ on: false, room: 0, x: 0, y: 0, vy: 0 });
+
+const lastFire = {}; // per-weapon cooldown timestamps
+
+// ---------- setup helpers ----------
+function addEnemy(n, r, x, y, kind) {
+  const e = enemy[n];
+  e.room = r; e.x = x; e.y = y; e.sx = x; e.vx = 0; e.vy = 0;
+  e.hp = 100; e.alive = true; e.kind = kind; e.dir = kind ? 2 : 0; e.flash = 0;
+}
+
+function reset() {
+  room = 0; px = 80; py = 356; pvx = 0; pvy = 0; php = 100; face = 1; weapon = 1;
+  ground = false; flagTaken = false; won = false; dash = false;
+  charge = 0; invuln = 0;
+  playerCoins = 0; playerLevel = 1;
+  for (let i = 0; i < MAXP; i++) shot[i].on = false;
+  for (let i = 0; i < MAXC; i++) coin[i].on = false;
+  for (let i = 0; i < 6; i++) { coin[i].on = true; coin[i].room = TUNNEL; coin[i].x = 250 + i * 60; coin[i].y = 380; coin[i].vy = 0; }
+
+  addEnemy(0, 1, 200, 352, 0); addEnemy(1, 1, 600, 252, 0);
+  addEnemy(2, 2, 150, 242, 0); addEnemy(3, 2, 560, 282, 0);
+  addEnemy(4, 3, 150, 352, 0); addEnemy(5, 3, 350, 252, 0); addEnemy(6, 3, 90, 152, 0);
+  addEnemy(7, 4, 560, 212, 0); addEnemy(8, 4, 150, 282, 0); addEnemy(9, 4, 650, 352, 0);
+  addEnemy(10, 5, 580, 212, 0); addEnemy(11, 5, 180, 272, 0); addEnemy(12, 5, 330, 132, 0);
+  addEnemy(13, 5, 700, 352, 0); addEnemy(14, 5, 450, 352, 0); addEnemy(15, 5, 250, 352, 0);
+  addEnemy(16, TUNNEL, 200, 352, 0); addEnemy(17, TUNNEL, 560, 352, 0);
+  addEnemy(18, 0, 300, 352, 1); addEnemy(19, 1, 300, 352, 1); addEnemy(20, 2, 300, 352, 1);
+  addEnemy(21, 3, 300, 352, 1); addEnemy(22, 4, 300, 352, 1); addEnemy(23, 5, 300, 352, 1);
+
+  oldRoom = -1;
+  restartBtn.classList.add("hidden"); continueBtn.classList.add("hidden"); escapeBtn.classList.add("hidden");
+  escapeSeq = 0;
+}
+
+function platform(r, i) {
+  let b = { x: 0, y: GY, w: W, h: 50 };
+  if (r === 0 && i === 1) b = { x: 600, y: 320, w: 150, h: 18 };
+  if (r === 1 && i === 1) b = { x: 550, y: 300, w: 150, h: 18 };
+  if (r === 2 && i === 1) b = { x: 100, y: 290, w: 150, h: 18 };
+  if (r === 2 && i === 2) b = { x: 500, y: 330, w: 150, h: 18 };
+  if (r === 3 && i === 1) b = { x: 300, y: 300, w: 200, h: 18 };
+  if (r === 3 && i === 2) b = { x: 60, y: 200, w: 110, h: 18 };
+  if (r === 4 && i === 1) b = { x: 500, y: 260, w: 200, h: 18 };
+  if (r === 4 && i === 2) b = { x: 100, y: 330, w: 150, h: 18 };
+  if (r === 5 && i === 1) b = { x: 520, y: 260, w: 200, h: 18 };
+  if (r === 5 && i === 2) b = { x: 130, y: 320, w: 150, h: 18 };
+  if (r === 5 && i === 3) b = { x: 280, y: 180, w: 150, h: 18 };
+  if (r === TUNNEL && i === 1) b = { x: 350, y: 330, w: 100, h: 18 };
+  return b;
+}
+function platformCount(r) {
+  if (r === 2 || r === 4 || r === TUNNEL) return 3;
+  if (r === 3) return 3;
+  if (r === 5) return 4;
+  if (r === 0 || r === 1) return 2;
+  return 1;
+}
+
+function spawn(kind, x, y, vx, vy, life, val) {
+  for (let i = 0; i < MAXP; i++) {
+    if (!shot[i].on) {
+      shot[i].on = true; shot[i].kind = kind; shot[i].room = room;
+      shot[i].x = x; shot[i].y = y; shot[i].vx = vx; shot[i].vy = vy;
+      shot[i].life = life; shot[i].val = val;
+      return;
+    }
+  }
+}
+
+function dropCoins(r, x, y) {
+  const num = (Math.random() * 5 | 0) + 1;
+  for (let i = 0; i < num; i++) {
+    for (let k = 0; k < MAXC; k++) {
+      if (!coin[k].on) {
+        coin[k].on = true; coin[k].room = r;
+        coin[k].x = x + (Math.random() * 20 | 0) - 10;
+        coin[k].y = y - (Math.random() * 10 | 0);
+        coin[k].vy = -3 - (Math.random() * 4 | 0);
+        break;
+      }
+    }
+  }
+}
+
+function hurtEnemies(x, y, rad, damage) {
+  damage = damage * (100 + (playerLevel - 1) * 10) / 100;
+  for (let i = 0; i < MAXE; i++) {
+    const e = enemy[i];
+    if (e.alive && e.room === room) {
+      const dx = e.x + 15 - x, dy = e.y + 24 - y, d = dx * dx + dy * dy;
+      if (d < rad * rad) {
+        e.hp -= damage; e.flash = 5; e.vx += (face > 0 ? 1 : -1) * 15;
+        if (e.hp <= 0) { if (e.alive) dropCoins(e.room, e.x + 15, e.y + 24); e.alive = false; }
+      }
+    }
+  }
+}
+
+function fire() {
+  const now = performance.now();
+  let gap = 120;
+  const sx = px + (face > 0 ? 28 : 0), sy = py + 22;
+  if (weapon === 1) gap = 480; if (weapon === 2) gap = 850; if (weapon === 4) gap = 700;
+  if (weapon === 6) gap = 850; if (weapon === 9) gap = 50;
+  if (lastFire[weapon] !== undefined && now - lastFire[weapon] < gap) return;
+  lastFire[weapon] = now;
+  tone(weapon === 2 ? 190 : 620);
+  if (weapon === 1) { spawn(1, sx, sy, face * 14, -3, 12, 0); spawn(1, sx, sy, face * 14, 0, 12, 0); spawn(1, sx, sy, face * 14, 3, 12, 0); }
+  else if (weapon === 2) spawn(2, sx, sy, face * 8, 0, 120, 0);
+  else if (weapon === 3) spawn(3, sx, sy, face * 6, -2, 24, 0);
+  else if (weapon === 4) spawn(4, sx, sy, face * 6, -18, 105, 0);
+  else if (weapon === 5) spawn(5, sx, sy, face * 12, (Date.now() % 5) - 2, 35, 0);
+  else if (weapon === 6) spawn(6, px + 14, GY - 20, 0, 0, 450, 0);
+  else if (weapon === 7) {
+    spawn(7, sx, sy, face * 12, (Date.now() % 5) - 2, 25, 0);
+    php += 2; if (php > 100) php = 100;
+    spawn(10, px + 14, py + 22, 0, -4, 10, 0);
+    for (let i = 0; i < MAXE; i++) if (enemy[i].alive) { enemy[i].hp += 2; if (enemy[i].hp > 100) enemy[i].hp = 100; }
+  }
+  else if (weapon === 9) { spawn(9, sx, sy - 4, face * 16, 0, 30, 0); spawn(9, sx, sy + 6, face * 16, 0, 30, 0); }
+}
+
+// ---------- main tick ----------
+function update() {
+  if (fullscreenHideTick > 0) {
+    fullscreenHideTick--;
+    if (fullscreenHideTick <= 0 && !escapeSeq) fullscreenBtn.classList.remove("hidden");
+  }
+  if (escapeSeq) {
+    escapeTick--;
+    if (escapeTick <= 0) { clearInterval(loopHandle); loopHandle = null; }
+    return;
+  }
+  if (won) return;
+
+  tick++;
+  if (tick % 8 === 0) {
+    const step = (tick / 8 | 0) % 18;
+    if (step < 15) {
+      const n = step % 5;
+      const f = [220, 261, 329, 392, 440][n];
+      tone(f, 20);
+    } else if (step === 15) tone(1046, 25);
+    else if (step === 16) tone(1568, 35);
+  }
+
+  if (key.Digit1) weapon = 1; if (key.Digit2) weapon = 2; if (key.Digit3) weapon = 3;
+  if (key.Digit4) weapon = 4; if (key.Digit5) weapon = 5; if (key.Digit6) weapon = 6;
+  if (key.Digit7) weapon = 7; if (key.Digit8) weapon = 8; if (key.Digit9) weapon = 9;
+
+  if (key.KeyC) {
+    if ((key.ArrowLeft || key.ArrowRight) && !dash) { dash = true; dashTime = 14; face = key.ArrowLeft ? -1 : 1; tone(880); }
+    else if (key.ArrowDown && ground) { pvy = -34; ground = false; tone(520); }
+    else if (key.ArrowUp) {
+      php += 20; if (php > 100) php = 100; tone(1040);
+      spawn(10, px + 14, py + 22, -3, -5, 15, 0); spawn(10, px + 14, py + 22, 0, -7, 15, 0); spawn(10, px + 14, py + 22, 3, -4, 15, 0);
+    }
+    key.KeyC = false;
+  }
+
+  if (dash) { pvx = face * 14; if (--dashTime <= 0) dash = false; }
+  else { pvx = 0; if (key.ArrowLeft) { pvx = -5; face = -1; } if (key.ArrowRight) { pvx = 5; face = 1; } }
+
+  if (key.KeyX && ground) { pvy = -21; ground = false; tone(740); key.KeyX = false; }
+
+  pvy += 2; if (pvy > 22) pvy = 22;
+  px += pvx; py += pvy; ground = false;
+
+  if (room <= 5) {
+    if (px > W) { if (room < 5) { room++; px = 4; py -= 12; } else px = W - 28; }
+    if (px < -28) { if (room > 0) { room--; px = W - 32; py -= 12; } else px = 0; }
+    if (room === 0 && px < 0) px = 0;
+    if (room === 5 && px > W - 28) px = W - 28;
+  } else {
+    if (px < 0) px = 0; if (px > W - 28) px = W - 28;
+  }
+
+  for (let i = 0; i < platformCount(room); i++) {
+    const b = platform(room, i);
+    if (px + 28 > b.x + 4 && px < b.x + b.w - 4 && pvy >= 0 && py + 44 >= b.y && py + 44 - pvy <= b.y + 3) { py = b.y - 44; pvy = 0; ground = true; }
+  }
+
+  // elevators & merchant
+  if (room === 0 && px > 350 && px < 450 && key.ArrowUp) {
+    if (playerCoins >= 10) { playerCoins -= 10; playerLevel++; tone(1400); } else tone(200);
+    key.ArrowUp = false;
+  }
+  if (room === 1 && px + 28 > 380 && px < 420 && key.ArrowDown) { room = TUNNEL; px = 40; py = 356; key.ArrowDown = false; tone(330); }
+  if (room === 4 && px + 28 > 380 && px < 420 && key.ArrowDown) { room = TUNNEL; px = 720; py = 356; key.ArrowDown = false; tone(330); }
+  if (room === TUNNEL && key.ArrowUp && px < 65) { room = 1; px = 380; py = 356; key.ArrowUp = false; tone(660); }
+  if (room === TUNNEL && key.ArrowUp && px > 735) { room = 4; px = 380; py = 356; key.ArrowUp = false; tone(660); }
+
+  const z = !!key.KeyZ;
+  if (weapon === 8) {
+    if (z) { if (charge < 100) charge += 3; }
+    else if (zWas && charge > 0) { spawn(8, px + (face > 0 ? 28 : 0), py + 22, face * 28, 0, 40, charge); tone(300); charge = 0; }
+  } else if (z && (!zWas || weapon === 3 || weapon === 5 || weapon === 7)) fire();
+  zWas = z;
+
+  if (room !== oldRoom) {
+    oldRoom = room;
+    for (let i = 0; i < MAXE; i++) {
+      if (enemy[i].kind === 1 && enemy[i].room === room) {
+        enemy[i].alive = true; enemy[i].hp = 100; enemy[i].x = enemy[i].sx; enemy[i].dir = 2; enemy[i].vy = 0;
+      }
+    }
+  }
+
+  for (let i = 0; i < MAXE; i++) {
+    const e = enemy[i];
+    if (!e.alive) continue;
+    e.x += e.vx; e.vx = e.vx * 8 / 10 | 0;
+    if (e.kind === 1) {
+      if (e.x < e.sx - 80) e.dir = 2;
+      if (e.x > e.sx + 80) e.dir = -2;
+      e.x += e.dir;
+    }
+    e.vy += 2; if (e.vy > 22) e.vy = 22;
+    e.y += e.vy;
+    for (let j = 0; j < platformCount(e.room); j++) {
+      const b = platform(e.room, j);
+      if (e.x + 30 > b.x + 4 && e.x < b.x + b.w - 4 && e.vy >= 0 && e.y + 48 >= b.y && e.y + 48 - e.vy <= b.y + 3) { e.y = b.y - 48; e.vy = 0; }
+    }
+    if (e.x < 0) e.x = 0; if (e.x > 770) e.x = 770;
+    if (e.room === room && hitBox(px, py, 28, 44, e.x, e.y, 30, 48) && invuln === 0) { php -= 5; invuln = 60; pvy = -10; ground = false; tone(200); }
+    if (e.flash) e.flash--;
+    if (e.y > 450) { e.alive = false; if (e.kind === 0) { playerCoins += 5; tone(1800); } }
+  }
+  if (invuln) invuln--;
+
+  for (let i = 0; i < MAXP; i++) {
+    const q = shot[i];
+    if (!q.on) continue;
+    q.x += q.vx; q.y += q.vy; q.life--;
+    if (q.kind === 4) q.vy += 1;
+    if (q.kind === 6) { if (q.life % 45 === 0) { const d = (q.life & 1) ? 1 : -1; spawn(5, q.x, q.y, d * 8, 0, 50, 0); } }
+
+    let hitEnemy = false;
+    if ((q.kind >= 1 && q.kind <= 5) || q.kind === 9 || q.kind === 8) {
+      for (let j = 0; j < MAXE; j++) {
+        const e = enemy[j];
+        if (e.alive && e.room === q.room && hitBox(q.x, q.y, 8, 8, e.x, e.y, 30, 48)) {
+          let dmg = 0;
+          if (q.kind === 1) dmg = 9;
+          else if (q.kind === 2) dmg = 40;
+          else if (q.kind === 3) dmg = 4;
+          else if (q.kind === 4) dmg = 50;
+          else if (q.kind === 5 || q.kind === 9) dmg = 7;
+          else if (q.kind === 8) dmg = 35 + (q.val * 35 / 100);
+          dmg = dmg * (100 + (playerLevel - 1) * 10) / 100;
+          e.hp -= dmg; e.flash = 5; e.vx += (q.vx > 0 ? 1 : -1) * 15;
+          if (e.hp <= 0) { if (e.alive) dropCoins(e.room, e.x + 15, e.y + 24); e.alive = false; }
+          hitEnemy = true;
+          if (q.kind !== 3) { q.on = false; break; } // flamer pierces
+        }
+      }
+    }
+    if (q.kind === 2 && (q.x < 0 || q.x > W || q.y > GY || hitEnemy)) { if (!hitEnemy) hurtEnemies(q.x, q.y, 75, 45); q.on = false; }
+    if (q.kind === 4 && (q.y > GY || hitEnemy)) { if (!hitEnemy) hurtEnemies(q.x, q.y, 85, 55); q.on = false; }
+    if ((q.kind === 1 || q.kind === 9 || q.kind === 8) && hitEnemy) { q.on = false; }
+    if (q.life <= 0 || q.x < -20 || q.x > 820) q.on = false;
+  }
+
+  if (!flagTaken && room === 5 && hitBox(px, py, 28, 44, 770, 360, 14, 40)) { flagTaken = true; tone(1200); }
+  if (flagTaken && room === 0 && hitBox(px, py, 28, 44, 14, 360, 14, 40) && !won) {
+    won = true;
+    restartBtn.classList.remove("hidden"); continueBtn.classList.remove("hidden"); escapeBtn.classList.remove("hidden");
+    tone(1400);
+  }
+
+  let hitCoin = false;
+  for (let i = 0; i < MAXC; i++) {
+    const c = coin[i];
+    if (c.on && c.room === room) {
+      c.vy += 1; if (c.vy > 12) c.vy = 12;
+      c.y += c.vy;
+      for (let j = 0; j < platformCount(room); j++) {
+        const b = platform(room, j);
+        if (c.x + 6 > b.x && c.x < b.x + b.w && c.vy >= 0 && c.y + 6 >= b.y && c.y + 6 - c.vy <= b.y + 3) { c.y = b.y - 6; c.vy = 0; }
+      }
+      if (hitBox(px, py, 28, 44, c.x, c.y, 6, 6)) { c.on = false; playerCoins++; hitCoin = true; }
+    }
+  }
+  if (hitCoin) tone(1800);
+
+  if (php <= 0) { tone(150); reset(); }
+}
+
+// ---------- drawing ----------
+function drawFlag(x, color) {
+  rect(x, 360, 3, 40, "rgb(210,210,210)");
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.moveTo(x + 3, 360); ctx.lineTo(x + 25, 368); ctx.lineTo(x + 3, 376); ctx.closePath(); ctx.fill();
+}
+
+function paint() {
+  if (escapeSeq) {
+    rect(0, 0, W, H, "rgb(0,0,0)");
+    text(70, 200, "rgb(255,255,255)", "BlueMung escaped the cave and went home, and eat dinner with family.", 15);
+    return;
+  }
+  rect(0, 0, W, H, bgColors[room]);
+  for (let i = 0; i < platformCount(room); i++) { const b = platform(room, i); rect(b.x, b.y, b.w, b.h, "rgb(74,74,74)"); }
+
+  if (room === 1 || room === 4) {
+    rect(380, 380, 40, 20, "rgb(85,85,102)"); frame(380, 380, 40, 20, "rgb(160,160,255)"); text(393, 382, "rgb(230,230,240)", "v");
+  }
+  if (room === TUNNEL) {
+    rect(20, 380, 40, 20, "rgb(85,85,102)"); rect(740, 380, 40, 20, "rgb(85,85,102)");
+    text(34, 382, "rgb(230,230,240)", "^"); text(754, 382, "rgb(230,230,240)", "^");
+  }
+  if (room === 0) {
+    drawFlag(14, "rgb(61,107,255)");
+    rect(400, 356, 28, 44, "rgb(95,211,255)");
+    rect(400, 356, 28, 10, "rgb(224,47,47)");
+    rect(403, 366, 5, 5, "rgb(255,255,255)");
+    text(355, 330, "rgb(255,255,100)", "[^] UPGRADE (10C)");
+  }
+  if (room === 5 && !flagTaken) drawFlag(770, "rgb(224,47,47)");
+
+  for (let i = 0; i < MAXP; i++) {
+    const s = shot[i];
+    if (!s.on || s.room !== room) continue;
+    let c = "rgb(255,255,255)";
+    if (s.kind === 1) c = "rgb(255,221,85)";
+    else if (s.kind === 2) c = "rgb(255,138,61)";
+    else if (s.kind === 3) c = "rgb(255,60,220)";
+    else if (s.kind === 4) c = "rgb(123,255,90)";
+    else if (s.kind === 5) c = "rgb(255,228,92)";
+    else if (s.kind === 6) c = "rgb(255,180,0)";
+    else if (s.kind === 9) c = "rgb(100,180,255)";
+    else if (s.kind === 8) c = "rgb(255,50,50)";
+    else if (s.kind === 7 || s.kind === 10) c = "rgb(50,255,50)";
+    let pw = 7, ph = 5;
+    if (s.kind === 6) { pw = 16; ph = 20; } else if (s.kind === 1) { pw = 6; ph = 6; } else if (s.kind === 8) { pw = 14; ph = 4; } else if (s.kind === 10) { pw = 4; ph = 4; }
+    rect(s.x - 3, s.y - 2, pw, ph, c);
+  }
+
+  for (let i = 0; i < MAXE; i++) {
+    const e = enemy[i];
+    if (!e.alive || e.room !== room) continue;
+    let ec = e.kind === 1 ? "rgb(150,50,200)" : "rgb(224,86,86)";
+    if (e.flash) ec = "rgb(255,182,193)";
+    rect(e.x, e.y, 30, 48, ec);
+    rect(e.x, e.y - 8, 30, 4, "rgb(50,0,0)");
+    rect(e.x, e.y - 8, e.hp * 30 / 100, 4, "rgb(60,255,60)");
+  }
+
+  const pc = invuln ? (invuln & 4 ? "rgb(255,0,255)" : "rgb(95,211,255)") : (dash ? "rgb(255,228,92)" : "rgb(95,211,255)");
+  if (face > 0) {
+    rect(px, py + 22, 6, 12, pc); rect(px, py + 18, 4, 4, pc); rect(px + 6, py + 16, 14, 18, pc);
+    rect(px + 10, py, 10, 16, pc); rect(px + 20, py + 6, 8, 10, pc); rect(px + 26, py + 4, 2, 2, pc);
+    rect(px + 20, py + 22, 8, 4, pc); rect(px + 6, py + 34, 6, 10, pc); rect(px + 14, py + 34, 6, 10, pc);
+    rect(px + 16, py + 6, 3, 3, "rgb(255,255,255)");
+  } else {
+    rect(px + 22, py + 22, 6, 12, pc); rect(px + 24, py + 18, 4, 4, pc); rect(px + 8, py + 16, 14, 18, pc);
+    rect(px + 8, py, 10, 16, pc); rect(px, py + 6, 8, 10, pc); rect(px, py + 4, 2, 2, pc);
+    rect(px, py + 22, 8, 4, pc); rect(px + 16, py + 34, 6, 10, pc); rect(px + 8, py + 34, 6, 10, pc);
+    rect(px + 9, py + 6, 3, 3, "rgb(255,255,255)");
+  }
+  if (flagTaken) { rect(px + 13, py - 22, 2, 22, "rgb(224,47,47)"); rect(px + 15, py - 22, 15, 12, "rgb(224,47,47)"); }
+
+  const rname = room === TUNNEL ? "Tunnel" : ("Room " + (room + 1));
+  text(10, 8, "rgb(255,255,255)", rname);
+  text(10, 26, "rgb(255,255,255)", "Weapon [" + weapon + "] " + wn[weapon]);
+  text(10, 44, "rgb(255,215,0)", "COINS: " + playerCoins);
+  text(10, 62, "rgb(100,255,100)", "LEVEL: " + playerLevel);
+
+  for (let i = 0; i < MAXC; i++) {
+    const c = coin[i];
+    if (c.on && c.room === room) { rect(c.x, c.y, 6, 6, "rgb(255,215,0)"); rect(c.x + 1, c.y + 1, 4, 4, "rgb(255,255,100)"); }
+  }
+
+  if (flagTaken) text(260, 200, "rgb(255,210,61)", "FLAG TAKEN - RETURN TO ROOM 1!");
+
+  rect(10, 428, 150, 10, "rgb(80,0,0)"); rect(10, 428, php * 150 / 100, 10, "rgb(230,51,51)");
+  frame(10, 428, 150, 10, "rgb(255,255,255)"); text(10, 413, "rgb(255,255,255)", "HP");
+
+  if (weapon === 8) {
+    rect(640, 428, 150, 10, "rgb(80,0,0)"); rect(640, 428, charge * 150 / 100, 10, "rgb(255,51,51)");
+    text(640, 413, "rgb(255,255,255)", "CHARGE");
+  }
+
+  for (let i = 0; i < 6; i++) {
+    rect(610 + i * 30, 10, 26, 16, i === room ? "rgb(255,207,61)" : "rgb(85,85,85)");
+    text(621 + i * 30, 11, "rgb(20,20,20)", "" + (i + 1), 12);
+  }
+
+  if (won) {
+    rect(150, 120, 500, 180, "rgb(0,0,0)"); frame(150, 120, 500, 180, "rgb(255,210,61)");
+    text(292, 155, "rgb(255,210,61)", "YOU WIN!", 20);
+    text(230, 190, "rgb(255,255,255)", "Enemy flag returned to your base.");
+    text(210, 230, "rgb(180,220,255)", "Click RESTART, CONTINUE, or ESCAPE");
+  }
+}
+
+// ---------- input ----------
+window.addEventListener("keydown", (e) => {
+  ensureAudio();
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space"].includes(e.code)) e.preventDefault();
+  key[e.code] = true;
+}, { passive: false });
+window.addEventListener("keyup", (e) => { key[e.code] = false; });
+
+// ---------- buttons ----------
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+const restartBtn = document.getElementById("restartBtn");
+const continueBtn = document.getElementById("continueBtn");
+const escapeBtn = document.getElementById("escapeBtn");
+const gameWrap = document.getElementById("gameWrap");
+
+fullscreenBtn.addEventListener("click", () => {
+  ensureAudio(); tone(980);
+  fullscreenBtn.classList.add("hidden"); fullscreenHideTick = 60;
+  if (!document.fullscreenElement) { gameWrap.requestFullscreen && gameWrap.requestFullscreen(); }
+  else { document.exitFullscreen && document.exitFullscreen(); }
+});
+restartBtn.addEventListener("click", () => { tone(980); reset(); });
+continueBtn.addEventListener("click", () => {
+  tone(980);
+  const c = playerCoins, l = playerLevel;
+  reset();
+  playerCoins = c; playerLevel = l;
+});
+escapeBtn.addEventListener("click", () => {
+  tone(980); escapeSeq = 1; escapeTick = 300;
+  restartBtn.classList.add("hidden"); continueBtn.classList.add("hidden"); escapeBtn.classList.add("hidden"); fullscreenBtn.classList.add("hidden");
+});
+
+// ---------- main loop ----------
+let loopHandle = null;
+function frameStep() { update(); paint(); }
+reset();
+loopHandle = setInterval(frameStep, 16);
+
+})();
+</script>
+</body>
+</html>
