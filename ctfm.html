@@ -11,7 +11,7 @@
 #vdown{left:9.5%;bottom:3%}
 #vleft{left:1.5%;bottom:17.5%}
 #vright{left:17.5%;bottom:17.5%}
-.vaction{width:15%;aspect-ratio:1;bottom:4%}
+.vaction{width:15%;aspect-ratio:1;bottom:22%}
 #vjump{right:2%}
 #vattack{right:19%}
 .vsmall{width:8.5%;aspect-ratio:1;bottom:4%;border-radius:16%;background:#ffffff26}
@@ -800,7 +800,7 @@ reset();paint(ctx);requestAnimationFrame(loop);
 // --- 모바일 가상 버튼 (반투명 오버레이) ---
 function vkey(code,keyName,down){
   const ev=new KeyboardEvent(down?'keydown':'keyup',{code,key:keyName,bubbles:true,cancelable:true});
-  window.dispatchEvent(ev);
+  document.body.dispatchEvent(ev);
 }
 document.querySelectorAll('#vpad .vbtn').forEach(btn=>{
   const code=btn.dataset.code,keyName=btn.dataset.key;
