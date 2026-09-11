@@ -1,0 +1,820 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tiny CTF · 고양이와 배달 여행</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eee9f1;color:#392f48;font:15px system-ui,sans-serif}main{max-width:1040px;margin:24px auto;padding:0 18px}header{display:flex;justify-content:space-between;align-items:center;gap:12px}h1{font-size:24px;margin:0 0 5px}header p{margin:0 0 18px;color:#766b80}.tag{font-size:12px;letter-spacing:.1em;background:#dfd7e7;padding:8px 12px;border-radius:20px}.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}button{font:inherit;border:1px solid #c9bed4;border-radius:9px;padding:8px 13px;background:#fffafc;color:#493958;cursor:pointer}button:hover{background:#eadff1}button:focus-visible{outline:3px solid #ad88c5}label{font-size:13px;display:flex;gap:7px;align-items:center}input[type=range]{width:85px;accent-color:#91719f}#stage{position:relative;background:#17141e;border-radius:12px;overflow:hidden;box-shadow:0 8px 30px #39234526}canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;image-rendering:pixelated;outline:none}#stage:fullscreen{display:flex;align-items:center;justify-content:center;border-radius:0}#stage:fullscreen canvas{width:min(100vw,177.777vh);height:auto}#cover{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:#20192ee6;color:#fff;padding:24px}#cover h2{font-size:30px;margin:0 0 12px}#cover p{color:#d8cddd;line-height:1.7}#start{background:#eddf9b;color:#423529;font-weight:700;max-width:220px;margin:8px auto}#cover[hidden],[hidden]{display:none!important}#status{min-height:22px;font-size:13px;color:#6a5c76}details{border-top:1px solid #d7cfdd;margin-top:18px;padding:16px 0}summary{cursor:pointer;font-weight:600}.help{display:grid;grid-template-columns:1fr 1fr;gap:10px 30px;line-height:1.8;font-size:14px}.help p{margin:7px 0}kbd{font-family:monospace;background:#fff;border:1px solid #d6cddd;border-radius:4px;padding:1px 5px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:6px;border-bottom:1px solid #ddd4e3}@media(max-width:650px){.help{grid-template-columns:1fr}header .tag{display:none}main{padding:0 8px;margin:12px auto}h1{font-size:20px}}
+#vpad{position:absolute;inset:0;z-index:6;display:none;touch-action:none}
+@media(max-width:900px),(pointer:coarse){#vpad.show{display:block}}
+.vbtn{position:absolute;display:flex;align-items:center;justify-content:center;flex-direction:column;line-height:1.05;background:#ffffff30;color:#fff;border:1px solid #ffffff55;border-radius:50%;font:700 13px/1.05 system-ui,sans-serif;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent}
+.vbtn small{font-weight:500;font-size:8px;opacity:.85;margin-top:1px}
+.vbtn.active{background:#ffffff70}
+.vdir{width:14%;aspect-ratio:1}
+#vup{left:9.5%;bottom:32%}
+#vdown{left:9.5%;bottom:3%}
+#vleft{left:1.5%;bottom:17.5%}
+#vright{left:17.5%;bottom:17.5%}
+.vaction{width:15%;aspect-ratio:1;bottom:4%}
+#vjump{right:2%}
+#vattack{right:19%}
+.vsmall{width:8.5%;aspect-ratio:1;bottom:4%;border-radius:16%;background:#ffffff26}
+#vstair{left:33%}
+#vhire{left:42.5%}
+#vdeliver{left:52%}
+#vcar{left:61.5%}
+#vdash{left:71%}
+.vw{position:absolute;top:2%;width:24px;height:24px;border-radius:6px;font-size:11px;background:#ffffff26}
+#vpause{position:absolute;top:2%;right:2%;width:30px;height:30px;border-radius:8px;font-size:13px;background:#ffffff30}
+#vhint{font-size:12px;color:#8a7d94;margin:6px 0 0}
+</style><main><header><div><h1>Tiny CTF · 고양이와 배달 여행</h1><p>깃발을 되찾고, 친구를 만나고, 따뜻한 한 끼를 배달하세요.</p></div><span class="tag">SINGLE FILE · OFFLINE</span></header>
+<div id="stage"><canvas id="game" width="800" height="450" tabindex="0" aria-label="키보드로 조작하는 고양이 동료 플랫폼 게임"></canvas><div id="cover"><h2>작은 모험, 세 마리 친구</h2><p>방향키로 이동 · X 점프 · Z 공격<br>시작하면 부드러운 효과음이 켜집니다.<br>키보드가 있는 PC에서 플레이하세요.</p><button id="start">게임 시작</button></div>
+<div id="vpad">
+  <button class="vbtn vdir" id="vup" data-code="ArrowUp" data-key="ArrowUp">▲</button>
+  <button class="vbtn vdir" id="vdown" data-code="ArrowDown" data-key="ArrowDown">▼</button>
+  <button class="vbtn vdir" id="vleft" data-code="ArrowLeft" data-key="ArrowLeft">◀</button>
+  <button class="vbtn vdir" id="vright" data-code="ArrowRight" data-key="ArrowRight">▶</button>
+  <button class="vbtn vsmall" id="vstair" data-code="KeyQ" data-key="q">Q<small>계단↑</small></button>
+  <button class="vbtn vsmall" id="vhire" data-code="KeyE" data-key="e">E<small>고용</small></button>
+  <button class="vbtn vsmall" id="vdeliver" data-code="KeyD" data-key="d">D<small>배달</small></button>
+  <button class="vbtn vsmall" id="vcar" data-code="KeyB" data-key="b">B<small>차</small></button>
+  <button class="vbtn vsmall" id="vdash" data-code="KeyC" data-key="c">C<small>대시</small></button>
+  <button class="vbtn vaction" id="vattack" data-code="KeyZ" data-key="z">Z<small>공격</small></button>
+  <button class="vbtn vaction" id="vjump" data-code="KeyX" data-key="x">X<small>점프</small></button>
+  <button class="vbtn vw" style="left:2%" data-code="Digit1" data-key="1">1</button>
+  <button class="vbtn vw" style="left:29px" data-code="Digit2" data-key="2">2</button>
+  <button class="vbtn vw" style="left:56px" data-code="Digit3" data-key="3">3</button>
+  <button class="vbtn vw" style="left:83px" data-code="Digit4" data-key="4">4</button>
+  <button class="vbtn vw" style="left:110px" data-code="Digit5" data-key="5">5</button>
+  <button class="vbtn vw" style="left:137px" data-code="Digit6" data-key="6">6</button>
+  <button class="vbtn vw" style="left:164px" data-code="Digit7" data-key="7">7</button>
+  <button class="vbtn vw" style="left:191px" data-code="Digit8" data-key="8">8</button>
+  <button class="vbtn vw" style="left:218px" data-code="Digit9" data-key="9">9</button>
+  <button class="vbtn" id="vpause" data-code="Escape" data-key="Escape">⏸</button>
+</div>
+</div>
+<p id="vhint">모바일: 좌하단 방향패드로 이동, 우하단 X(점프)·Z(공격), 가운데 작은 버튼은 Q(계단)·E(고용)·D(배달)·B(차)·C(대시/회복, 방향키와 함께 꾹 누르기), 상단 숫자는 무기 선택, 우측 상단 ⏸은 일시정지입니다.</p>
+<div class="bar"><button id="pause">일시정지</button><button id="new">새 게임</button><button id="fullscreen">전체화면</button><button id="mute">음소거</button><label>음량 <input id="volume" aria-label="음량" type="range" min="0" max="1" step="0.05" value="0.35"></label><label><input type="checkbox" id="music">원작 멜로디</label><button id="restart" hidden>RESTART</button><button id="continue" hidden>CONTINUE</button><button id="escape" hidden>ESCAPE · 귀가</button></div>
+<p id="status">HTML 파일을 열고 게임 시작을 눌러주세요. 인터넷 연결은 필요하지 않습니다.</p>
+<details open><summary>조작법과 모험 안내</summary><div class="help"><div><p><kbd>←</kbd> <kbd>→</kbd> 이동 · <kbd>X</kbd> 점프 · <kbd>Z</kbd> 공격<br><kbd>1</kbd>~<kbd>9</kbd> 무기 선택 · 8번은 Z를 모았다 놓으면 저격<br><kbd>C</kbd>+좌우: 돌진 · C+↓: 높이 점프 · C+↑: 회복</p><p><kbd>E</kbd> 고양이 고용(각 5코인) · <kbd>B</kbd> 자동차 구매(5코인)/승하차<br>차량 체력 100 · 충돌 시 5, 방 이동 시 20 소모<br>하차 후 7번 무기로 자신·적·같은 방 자동차 회복</p><p>숏컷 계단: 지상 <kbd>↓</kbd>, 지하 <kbd>↑</kbd><br>지하층: <kbd>Q</kbd> 위층 · <kbd>E</kbd> 아래층<br>1번 방 상인 앞 <kbd>↑</kbd>: 10코인으로 레벨업<br><kbd>Esc</kbd> 일시정지 · 창을 벗어나면 자동 일시정지</p></div><div><p>11번 방 적 깃발을 가져와 1번 방에 도착하면 승리!<br>CONTINUE는 코인·레벨을 유지하고 다음 판을 시작합니다.</p><p>노란 고양이: 3초마다 흙·회복·갸르릉·응원<br>흰 고양이: 5초마다 잠·우다다·점프<br>검은 고양이: 2초마다 충전 저격 · 고양이 공격은 레벨당 +5%</p><p><kbd>D</kbd> 가게에서 수령 / 동물에게 배달 · 건당 10~20코인<br>가게마다 한 접시, 서로 다른 음식은 함께 운반 가능</p><table><tr><th>가게(각 층 오른쪽)</th><th>배달 대상</th></tr><tr><td>B1 부리또</td><td>2번 방 돼지</td></tr><tr><td>B2 햄버거</td><td>4번 방 닥스훈트</td></tr><tr><td>B3 부대찌개</td><td>6번 방 송아지</td></tr><tr><td>B4 피자</td><td>8번 방 닭</td></tr></table></div></div></details></main><script>
+"use strict";
+const W=800,H=450,GY=400,SURFACE=11,ENDBASE=10,TUNNEL=11,DEPTH1=12,TOTAL_ROOMS=17,BASE_ENEMIES=49,MAXE=69,MAXP=48,MAXC=50,SHOP_X=1430,CUSTOMER_X=450;
+const VK_UP='ArrowUp',VK_DOWN='ArrowDown',VK_LEFT='ArrowLeft',VK_RIGHT='ArrowRight',SW_HIDE=0,SW_SHOW=1;
+let room=0,px=80,py=356,pvx=0,pvy=0,php=100,face=1,weapon=1,ground=0,flagTaken=0,zWas=0,dash=0,dashTime=0,invuln=0,charge=0,tick=0,won=0;
+let escape_seq=0,escape_tick=0,fullscreen_hide_tick=0,catIndex=0,old_room=-1,drawOffset=0,player_coins=0,player_level=1,carNotice=0,deliveryNotice=0,deliveryMessage='';
+const key={},pressed={},lastFire=Array(10).fill(0),carrying=Array(4).fill(0),thanks=Array(4).fill(0);
+function record(names){return Object.fromEntries(names.split(' ').map(k=>[k,0]));}
+const enemy=Array.from({length:MAXE},()=>record('room x y vx vy hp alive kind sx dir flash'));
+const shot=Array.from({length:MAXP},()=>record('on kind room x y vx vy life val'));
+const coin=Array.from({length:MAXC},()=>record('on room x y vy'));
+const cats=Array.from({length:3},()=>({...record('hired room x y vy ground dir say actionAt type mode legs charging'),message:'',struck:Array(MAXE).fill(0)}));
+const car=record('exists riding room x y vy hp');
+const foodName=['Burrito','Burger','BudaeStew','Pizza'];
+const foodColor=[RGB(240,228,177),RGB(142,12,38),RGB(199,187,224),RGB(188,220,105)];
+const wn=['','Scattergun','Rocket','Flamer','Grenade','Minigun','Sentry','Medi Gun','Sniper','Dual Pistol'];
+const bg=[RGB(26,39,51),RGB(32,35,43),RGB(35,42,32),RGB(42,38,32),RGB(42,32,32),RGB(51,26,26),RGB(13,15,20)];
+const abs=Math.abs;let gameTime=0;
+function GetTickCount(){return gameTime;}
+function rand(){return Math.floor(Math.random()*2147483647);}
+function zero(o){for(const k of Object.keys(o)){if(typeof o[k]==='object')zero(o[k]);else o[k]=typeof o[k]==='string'?'':0;}}
+function fmt(f,...a){let i=0;return f.replace(/%[sd]/g,m=>m==='%d'?Math.trunc(a[i++]):String(a[i++]));}
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+function RGB(r,g,b){return `rgb(${r},${g},${b})`;}
+function rect(d,x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x-drawOffset),Math.round(y),Math.round(w),Math.round(h));}
+function frame(d,x,y,w,h,c){ctx.strokeStyle=c;ctx.lineWidth=1;ctx.strokeRect(Math.round(x-drawOffset)+.5,Math.round(y)+.5,Math.round(w),Math.round(h));}
+function text(d,x,y,c,s){if(room<TUNNEL&&room%2&&!won&&!escape_seq)c=RGB(78,65,85);ctx.fillStyle=c;ctx.font='12px monospace';ctx.textBaseline='top';ctx.fillText(String(s),Math.round(x-drawOffset),Math.round(y));}
+function flag(d,x,c){rect(d,x,360,3,40,RGB(210,210,210));ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x+3-drawOffset,360);ctx.lineTo(x+25-drawOffset,368);ctx.lineTo(x+3-drawOffset,376);ctx.fill();}
+const restartButton='restart',continueButton='continue',escapeButton='escape',fullscreenButton='fullscreen';
+function ShowWindow(id,on){if(id!=='fullscreen')document.getElementById(id).hidden=!on;}
+function PostQuitMessage(){paused=true;document.getElementById('status').textContent='집으로 돌아왔습니다. 새 게임으로 다시 시작할 수 있어요.';}
+function damageCar(amount) {
+  car.hp-=amount;
+  if(car.hp<=0){car.hp=0;car.exists=car.riding=0;invuln=15;carNotice=120;}
+}
+
+function syncCar() {
+  if(car.riding){car.room=room;car.x=px-18;car.y=py+12;car.vy=pvy;}
+}
+
+function roomWidth(r) {return r>=DEPTH1?W*2:W;}
+
+function cameraX() {var x=px-W/2;if(x<0)x=0;if(x>roomWidth(room)-W)x=roomWidth(room)-W;return x;}
+
+function hit(ax, ay, aw, ah, bx, by, bw, bh) { return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by; }
+
+function addEnemy(n, r, x, y, kind) {
+  enemy[n].room=(r==TUNNEL?r:r*2); enemy[n].x=x; enemy[n].y=y; enemy[n].sx=x; enemy[n].vx=0; enemy[n].vy=0; enemy[n].hp=100; enemy[n].alive=1; enemy[n].kind=kind; enemy[n].dir=kind?2:0; enemy[n].flash=0;
+}
+
+function reset() {
+  var i; room=0;px=80;py=356;pvx=pvy=0;php=100;face=1;weapon=1;ground=0;flagTaken=won=dash=0;charge=invuln=0;
+  zero(carrying);zero(thanks);deliveryNotice=0;deliveryMessage="";
+  player_coins=0; player_level=1; for(i=0;i<MAXP;i++) shot[i].on=0; for(i=0;i<MAXC;i++) coin[i].on=0;
+  for(i=0;i<6;i++) { coin[i].on=1; coin[i].room=TUNNEL; coin[i].x=250+i*60; coin[i].y=380; coin[i].vy=0; }
+  zero(enemy); zero(key); zero(pressed);
+  zero(car);carNotice=0;
+  zero(cats);catIndex=0;
+  for(i=0;i<3;i++){cats[i].type=i;cats[i].x=170+i*95;cats[i].y=360;cats[i].dir=1;cats[i].message="";}
+  old_room=-1; tick=0; zWas=0;
+  addEnemy(0,1,200,352,0); addEnemy(1,1,600,252,0); addEnemy(2,2,150,242,0); addEnemy(3,2,560,282,0);
+  addEnemy(4,3,150,352,0); addEnemy(5,3,350,252,0); addEnemy(6,3,90,152,0); addEnemy(7,4,560,212,0);
+  addEnemy(8,4,150,282,0); addEnemy(9,4,650,352,0); addEnemy(10,5,580,212,0); addEnemy(11,5,180,272,0);
+  addEnemy(12,5,330,132,0); addEnemy(13,5,700,352,0); addEnemy(14,5,450,352,0); addEnemy(15,5,250,352,0);
+  addEnemy(16,TUNNEL,200,352,0); addEnemy(17,TUNNEL,560,352,0);
+  addEnemy(18,0,300,352,1); addEnemy(19,1,300,352,1); addEnemy(20,2,300,352,1); addEnemy(21,3,300,352,1); addEnemy(22,4,300,352,1); addEnemy(23,5,300,352,1);
+  for(i=0;i<5;i++) {
+    var j,n=24+i*2;
+    addEnemy(n,0,290,352,1); enemy[n].room=1+i*2;
+    addEnemy(n+1,0,620,352,0); enemy[n+1].room=1+i*2;
+    for(j=0;j<3;j++) { n=34+i*3+j; addEnemy(n,0,270+j*160,352,1); enemy[n].room=DEPTH1+i; }
+  }
+  ShowWindow(restartButton,SW_HIDE); ShowWindow(continueButton,SW_HIDE); ShowWindow(escapeButton,SW_HIDE); escape_seq=0;
+}
+
+function platform(r, i, b) {
+  b.x=0;b.y=GY;b.w=roomWidth(r);b.h=50;
+  if(r>=DEPTH1) {
+    if(i>0){
+      var depth=r-DEPTH1;
+      b.x=190+(i-1)*110;
+      b.y=335-((i+depth)%4)*55;
+      b.w=70+((i+depth)%3)*15;b.h=14;
+    } return;
+  }
+  if(r<TUNNEL && r%2) {
+    if(i>0){var theme=Math.trunc(r/2); b.x=65+(i-1)*125;
+      b.y=340-((i+theme)%3)*65;b.w=85+(theme%2)*15;b.h=14;} return;
+  }
+  if(r<TUNNEL)r=Math.trunc(r/2);
+  if(r==0 && i==1){b.x=600;b.y=320;b.w=150;b.h=18;}
+  if(r==1 && i==1){b.x=550;b.y=300;b.w=150;b.h=18;}
+  if(r==2 && i==1){b.x=100;b.y=290;b.w=150;b.h=18;}
+  if(r==2 && i==2){b.x=500;b.y=330;b.w=150;b.h=18;}
+  if(r==3 && i==1){b.x=300;b.y=300;b.w=200;b.h=18;}
+  if(r==3 && i==2){b.x=60;b.y=200;b.w=110;b.h=18;}
+  if(r==4 && i==1){b.x=500;b.y=260;b.w=200;b.h=18;}
+  if(r==4 && i==2){b.x=100;b.y=330;b.w=150;b.h=18;}
+  if(r==5 && i==1){b.x=520;b.y=260;b.w=200;b.h=18;}
+  if(r==5 && i==2){b.x=130;b.y=320;b.w=150;b.h=18;}
+  if(r==5 && i==3){b.x=280;b.y=180;b.w=150;b.h=18;}
+  if(r==TUNNEL && i==1){b.x=350;b.y=330;b.w=100;b.h=18;}
+}
+
+function platformCount(r) {
+  if(r>=DEPTH1)return 13;
+  if(r==TUNNEL)return 2;
+  if(r%2)return 7;
+  r=Math.trunc(r/2); if(r==2||r==3||r==4)return 3; if(r==5)return 4; return 2;
+}
+
+function travel(destination, x, y) {
+  room=destination;px=x;py=y;pvx=pvy=0;ground=0;dash=0;
+  invuln=23; 
+  if(car.riding){
+    var i;var b={};
+    
+    if(px<20)px=20;if(px>roomWidth(room)-48)px=roomWidth(room)-48;
+    if(py>GY-44-16)py=GY-44-16;
+    for(i=0;i<platformCount(room);i++){platform(room,i,b);
+      if(px+46>b.x&&px-18<b.x+b.w&&py+44>b.y&&py+12<b.y+b.h)py=b.y-44-16;}
+    syncCar();damageCar(20);
+  }
+}
+
+function spawn(kind, x, y, vx, vy, life, val) {
+  var i; for(i=0;i<MAXP;i++) if(!shot[i].on) { shot[i].on=1;shot[i].kind=kind;shot[i].room=room;shot[i].x=x;shot[i].y=y;shot[i].vx=vx;shot[i].vy=vy;shot[i].life=life;shot[i].val=val;return; }
+}
+
+function dropCoins(r,  x,  y) {
+  var i, k, num = (rand() % 5) + 1;
+  for(i=0; i<num; i++) {
+    for(k=0; k<MAXC; k++) {
+      if(!coin[k].on) {
+        coin[k].on = 1; coin[k].room = r;
+        coin[k].x = x + (rand()%20) - 10;
+        coin[k].y = y - (rand()%10);
+        coin[k].vy = -3 - (rand()%4);
+        break;
+      }
+    }
+  }
+}
+
+function hurtEnemies(x, y, rad, damage) {
+  var i,dx,dy,d;
+  damage =Math.trunc( damage * (100 + (player_level - 1) * 10) / 100);
+  for(i=0;i<MAXE;i++) if(enemy[i].alive && enemy[i].room==room) {
+    dx=enemy[i].x+15-x; dy=enemy[i].y+24-y; d=dx*dx+dy*dy;
+    if(d<rad*rad) { enemy[i].hp-=damage; enemy[i].flash=5; enemy[i].vx+=(face>0?1:-1)*15; if(enemy[i].hp<=0){ if(enemy[i].alive) dropCoins(enemy[i].room, enemy[i].x+15, enemy[i].y+24); enemy[i].alive=0; } }
+  }
+}
+
+function fire() {
+  var now=GetTickCount(), gap=120; var sx=px+(face>0?28:0),sy=py+22;
+  if(car.riding)return;
+  if(weapon==1)gap=480; if(weapon==2)gap=850; if(weapon==4)gap=700; if(weapon==6)gap=850; if(weapon==9)gap=50;
+  if(now-lastFire[weapon]<gap)return; lastFire[weapon]=now; tone(weapon==2?190:620);
+  if(weapon==1) { spawn(1,sx,sy,face*14,-3,12,0); spawn(1,sx,sy,face*14,0,12,0); spawn(1,sx,sy,face*14,3,12,0); }
+  else if(weapon==2)spawn(2,sx,sy,face*8,0,120,0);
+  else if(weapon==3)spawn(3,sx,sy,face*6,-2,24,0);
+  else if(weapon==4)spawn(4,sx,sy,face*6,-18,105,0);
+  else if(weapon==5)spawn(5,sx,sy,face*12,(GetTickCount()%5)-2,35,0);
+  else if(weapon==6)spawn(6,px+14,GY-20,0,0,450,0);
+  else if(weapon==7) { if(car.exists&&car.room==room){car.hp+=2;if(car.hp>100)car.hp=100;} spawn(7,sx,sy,face*12,(GetTickCount()%5)-2,25,0); php+=2; if(php>100)php=100; spawn(10,px+14,py+22,0,-4,10,0); var i; for(i=0;i<MAXE;i++)if(enemy[i].alive){enemy[i].hp+=2;if(enemy[i].hp>100)enemy[i].hp=100;} }
+  else if(weapon==9) { spawn(9,sx,sy-4,face*16,0,30,0); spawn(9,sx,sy+6,face*16,0,30,0); }
+}
+
+function catRect(d, x, y, w, h, c) {
+  rect(d,cats[catIndex].x+(cats[catIndex].dir<0?36-x-w:x),cats[catIndex].y+y,w,h,c);
+}
+
+function drawCat(d) {
+  var gold=RGB(255,201,8),brown=RGB(183,124,88),cream=RGB(240,228,177),green=RGB(30,177,70);
+  if(cats[catIndex].room!=room)return;
+  if(cats[catIndex].type==1){gold=RGB(245,243,238);brown=RGB(208,197,206);cream=RGB(255,249,240);green=RGB(122,161,183);}
+  if(cats[catIndex].type==2){gold=RGB(38,35,48);brown=RGB(65,58,72);cream=RGB(104,96,114);green=RGB(220,225,150);}
+  if(cats[catIndex].type==1&&cats[catIndex].mode==1){
+    catRect(d,5,27,29,13,gold);catRect(d,24,23,9,10,brown);
+    text(d,cats[catIndex].x+8,cats[catIndex].y+8,RGB(225,218,237),"zzz");return;
+  }
+  catRect(d,1,20,9,15,gold);catRect(d,1,23,9,3,brown);catRect(d,1,29,9,3,brown);
+  catRect(d,9,27,25,10,gold);catRect(d,13,7,22,22,gold);
+  catRect(d,13,1,7,13,brown);catRect(d,28,0,7,13,brown);
+  catRect(d,18,9,4,4,green);catRect(d,28,9,4,4,green);
+  catRect(d,23,19,4,3,green);catRect(d,14,22,19,6,cream);catRect(d,20,28,8,4,cream);
+  catRect(d,13,35,5,5,gold);catRect(d,22,35,5,5,gold);catRect(d,30,35,5,5,gold);
+  if(!cats[catIndex].hired)text(d,cats[catIndex].x-45,cats[catIndex].y-22,gold,cats[catIndex].type==1?"[E] WHITE 5C":cats[catIndex].type==2?"[E] BLACK 5C":"[E] GOLD 5C");
+  if(cats[catIndex].say)text(d,cats[catIndex].x>cameraX()+620?cameraX()+600:cats[catIndex].x,cats[catIndex].y<70?70:cats[catIndex].y-20,cream,cats[catIndex].message);
+}
+
+function updateCat() {
+  var i,dx;var b={};var now=GetTickCount();
+  var words=["Hope!","Brave!","Kindness!","Joy!","Believe!","You can do it!"];
+  if(cats[catIndex].say)cats[catIndex].say--;
+  if(!cats[catIndex].hired){
+    if(room==0&&abs(px-cats[catIndex].x)<65&&abs(py-cats[catIndex].y)<65&&pressed['E']){
+      if(player_coins>=5){player_coins-=5;cats[catIndex].hired=1;cats[catIndex].actionAt=now;cats[catIndex].message="Friends!";}
+      else cats[catIndex].message="Need 5 coins!";
+      cats[catIndex].say=100;pressed['E']=0;
+    }
+  } else {
+    if(cats[catIndex].room!=room){cats[catIndex].room=room;cats[catIndex].x=px;cats[catIndex].y=py-48;cats[catIndex].vy=0;cats[catIndex].ground=0;if(cats[catIndex].type==1&&cats[catIndex].mode==2){cats[catIndex].mode=0;cats[catIndex].legs=0;}}
+    if(car.riding){cats[catIndex].x=px-28+cats[catIndex].type*23;cats[catIndex].y=py-28;cats[catIndex].vy=0;cats[catIndex].ground=0;cats[catIndex].dir=face;}
+    if(cats[catIndex].type==1&&now-cats[catIndex].actionAt>=5000){
+      catSound(1);cats[catIndex].actionAt=now;cats[catIndex].mode=1+rand()%3;cats[catIndex].legs=0;zero(cats[catIndex].struck);
+    }
+    dx=car.riding?0:px-face*(42+cats[catIndex].type*38)-cats[catIndex].x;
+    if(cats[catIndex].type==1&&cats[catIndex].mode==1)dx=0;
+    if(cats[catIndex].type==1&&cats[catIndex].mode==2&&!car.riding){
+      var target=cats[catIndex].legs%2?roomWidth(room)*9/10:roomWidth(room)/10;
+      var zoomSpeed=16*roomWidth(room)/W;
+      dx=target-cats[catIndex].x;cats[catIndex].dir=dx>=0?1:-1;
+      if(abs(dx)<=zoomSpeed){cats[catIndex].x=target;cats[catIndex].legs++;if(cats[catIndex].legs>=5){cats[catIndex].mode=0;cats[catIndex].legs=0;}}
+      else cats[catIndex].x+=cats[catIndex].dir*zoomSpeed;
+      for(i=0;i<MAXE;i++)if(!cats[catIndex].struck[i]&&enemy[i].alive&&enemy[i].room==room&&hit(cats[catIndex].x,cats[catIndex].y,36,40,enemy[i].x,enemy[i].y,30,48)){
+        var damage=Math.trunc(40*(100+(player_level-1)*5)/100);if(damage>99)damage=99;
+        cats[catIndex].struck[i]=1;enemy[i].hp-=damage;enemy[i].flash=5;enemy[i].vx=cats[catIndex].dir*18;
+        if(enemy[i].hp<=0){dropCoins(room,enemy[i].x,enemy[i].y);enemy[i].alive=0;}
+      }
+    }else if(abs(dx)>12){
+      var speed=cats[catIndex].type==1?(cats[catIndex].mode==3?6:1):(abs(dx)>160?7:4);
+      cats[catIndex].dir=dx>0?1:-1;cats[catIndex].x+=cats[catIndex].dir*speed;
+    }
+    if(cats[catIndex].ground&&!car.riding&&!(cats[catIndex].type==1&&(cats[catIndex].mode==1||cats[catIndex].mode==2))&&
+       (py+44<cats[catIndex].y+24||abs(dx)>120||(cats[catIndex].type==1&&cats[catIndex].mode==3))){cats[catIndex].vy=-22;cats[catIndex].ground=0;}
+    if(cats[catIndex].type==2){
+      var elapsed=now-cats[catIndex].actionAt;
+      if(elapsed>=1500&&elapsed<2000){if(!cats[catIndex].charging){catSound(2);cats[catIndex].charging=1;}cats[catIndex].message="Purrr...";cats[catIndex].say=2;}
+      if(elapsed>=2000){cats[catIndex].charging=0;
+        var target=-1,best=1000000,vx=cats[catIndex].dir*24,vy=0;
+        cats[catIndex].actionAt=now;cats[catIndex].message="Pew!";cats[catIndex].say=30;
+        for(i=0;i<MAXE;i++)if(enemy[i].alive&&enemy[i].room==room){
+          var dist=abs(enemy[i].x-cats[catIndex].x)+abs(enemy[i].y-cats[catIndex].y);if(dist<best){best=dist;target=i;}}
+        if(target>=0){var tx=enemy[target].x+15-cats[catIndex].x-18,ty=enemy[target].y+24-cats[catIndex].y-18;
+          var scale=abs(tx)>abs(ty)?abs(tx):abs(ty);if(scale<1)scale=1;
+          vx=tx*24/scale;vy=ty*24/scale;cats[catIndex].dir=tx>=0?1:-1;}
+        spawn(12,cats[catIndex].x+18,cats[catIndex].y+18,vx,vy,75,0);
+      }
+    }
+    if(cats[catIndex].type==0&&now-cats[catIndex].actionAt>=3000){
+      catSound(0);var action=rand()%4;cats[catIndex].actionAt=now;cats[catIndex].say=100;
+      if(action==0){var target=-1,best=1000000;
+        for(i=0;i<MAXE;i++)if(enemy[i].alive&&enemy[i].room==room){
+          var dist=abs(enemy[i].x-cats[catIndex].x)+abs(enemy[i].y-cats[catIndex].y);
+          if(dist<best){best=dist;target=i;}}
+        if(target>=0)cats[catIndex].dir=enemy[target].x>cats[catIndex].x?1:-1;
+        spawn(11,cats[catIndex].x+18,cats[catIndex].y+18,cats[catIndex].dir*24,-6,75,0);cats[catIndex].message="Dirt toss!";
+      } else if(action==1){php+=10;if(php>100)php=100;spawn(10,px+14,py,0,-3,20,0);cats[catIndex].message="Heal +10!";}
+      else if(action==2){cats[catIndex].message="Purrrr...";tone(440);}
+      else cats[catIndex].message=words[rand()%6];
+    }
+  }
+  if(cats[catIndex].room!=room||car.riding)return;
+  if(cats[catIndex].x<4)cats[catIndex].x=4;if(cats[catIndex].x>roomWidth(room)-40)cats[catIndex].x=roomWidth(room)-40;
+  cats[catIndex].vy+=2;if(cats[catIndex].vy>22)cats[catIndex].vy=22;cats[catIndex].y+=cats[catIndex].vy;cats[catIndex].ground=0;
+  for(i=0;i<platformCount(cats[catIndex].room);i++){platform(cats[catIndex].room,i,b);
+    if(cats[catIndex].x+36>b.x&&cats[catIndex].x<b.x+b.w&&cats[catIndex].vy>=0&&cats[catIndex].y+40>=b.y&&cats[catIndex].y+40-cats[catIndex].vy<=b.y+3){cats[catIndex].y=b.y-40;cats[catIndex].vy=0;cats[catIndex].ground=1;}}
+  if(cats[catIndex].y>H+40){cats[catIndex].x=px;cats[catIndex].y=-40;cats[catIndex].vy=0;cats[catIndex].ground=0;}
+}
+
+function updateCats() {
+  var i,nearest=-1,best=65;
+  if(room==0&&pressed['E']){
+    for(i=0;i<3;i++)if(!cats[i].hired&&abs(py-cats[i].y)<65&&abs(px-cats[i].x)<best){best=abs(px-cats[i].x);nearest=i;}
+    if(nearest>=0){catIndex=nearest;updateCat();}
+  }
+  for(i=0;i<3;i++)if(i!=nearest){catIndex=i;updateCat();}
+  catIndex=0;
+}
+
+function updateCar() {
+  var i;var b={};
+  if(carNotice)carNotice--;
+  if(pressed['B']){
+    if(car.riding){syncCar();car.riding=0;dash=0;charge=0;}
+    else if(car.exists){
+      if(car.room==room&&hit(px-24,py-16,76,76,car.x,car.y,64,32)){
+        car.riding=1;px=car.x+18;py=car.y-12;pvy=car.vy;charge=0;dash=0;
+      }else carNotice=120;
+    }else if(player_coins>=5){
+      player_coins-=5;car.exists=car.riding=1;car.hp=100;charge=0;dash=0;syncCar();
+    }else carNotice=120;
+  }
+  if(car.exists&&!car.riding){
+    car.vy+=2;if(car.vy>22)car.vy=22;car.y+=car.vy;
+    for(i=0;i<platformCount(car.room);i++){platform(car.room,i,b);
+      if(car.x+64>b.x&&car.x<b.x+b.w&&car.vy>=0&&car.y+32>=b.y&&car.y+32-car.vy<=b.y+3){car.y=b.y-32;car.vy=0;}}
+    if(car.y>H+40){car.y=-32;car.vy=0;}
+  }
+}
+
+function drawCar(d) {
+  var x=car.x,y=car.y,wobble=car.riding&&pvx?((tick/5)&1):0;
+  if(!car.exists||car.room!=room)return;
+  rect(d,x+4,y,44,17,RGB(30,177,70));
+  rect(d,x+3,y+14,57,14,RGB(183,124,88));
+  rect(d,x+18,y+17,6,5,RGB(151,218,224));rect(d,x+33,y+17,6,5,RGB(151,218,224));
+  rect(d,x+(face>0?55:0),y+14,8,8,RGB(255,201,8));
+  rect(d,x+(face>0?57:0),y+24,7,3,RGB(255,201,8));
+  rect(d,x+8,y+27,11,5+wobble,RGB(12,12,12));
+  rect(d,x+43,y+27,11,5+(car.riding&&pvx?1-wobble:0),RGB(12,12,12));
+  rect(d,x+11,y+28,5,2+wobble,RGB(130,130,130));
+  rect(d,x+46,y+28,5,2+(car.riding&&pvx?1-wobble:0),RGB(130,130,130));
+}
+
+function updateDelivery() {
+  var i;
+  if(deliveryNotice)deliveryNotice--;
+  for(i=0;i<4;i++)if(thanks[i])thanks[i]--;
+  if(!pressed['D'])return;
+  pressed['D']=0;
+  for(i=0;i<4;i++){
+    if(room==DEPTH1+i&&abs(px+14-(SHOP_X+60))<85&&abs(py+44-GY)<60){
+      if(!carrying[i]){
+        carrying[i]=1;
+        deliveryMessage=fmt("%s - deliver to Room %d",foodName[i],2+i*2);tone(880);
+      }else deliveryMessage=fmt("Already carrying %s",foodName[i]);
+      deliveryNotice=180;return;
+    }
+    if(room==1+i*2&&abs(px+14-(CUSTOMER_X+25))<75&&abs(py+44-GY)<60){
+      if(carrying[i]){
+        var reward=10+rand()%11;carrying[i]=0;player_coins+=reward;thanks[i]=180;
+        deliveryMessage=fmt("Delivery Complete  +%d GOLD",reward);tone(1200);
+      }else deliveryMessage=fmt("Please bring %s from B%d",foodName[i],i+1);
+      deliveryNotice=180;return;
+    }
+  }
+}
+
+function drawFood(d, type, x, y, plate) {
+  var cream=RGB(240,228,177),dark=RGB(54,39,44);
+  var i;
+  if(plate){rect(d,x-4,y+19,48,3,RGB(255,255,255));rect(d,x+1,y+22,38,3,RGB(240,246,250));rect(d,x+9,y+25,22,2,RGB(240,246,250));}
+  if(type==0){
+    rect(d,x,y,40,19,cream);frame(d,x,y,40,19,dark);
+    for(i=0;i<17;i++){rect(d,x+2+i,y+1+i,2,1,dark);rect(d,x+19-i/2,y+1+i,1,1,dark);}
+  }else if(type==1){
+    rect(d,x+5,y,30,4,cream);rect(d,x+2,y+4,36,4,cream);
+    rect(d,x,y+8,40,3,RGB(30,177,70));rect(d,x+2,y+11,36,4,foodColor[1]);
+    rect(d,x,y+15,40,2,RGB(255,225,70));rect(d,x+2,y+17,36,3,cream);
+    for(i=0;i<4;i++)rect(d,x+9+i*7,y+2,2,2,RGB(245,213,84));
+  }else if(type==2){
+    rect(d,x+2,y+6,36,14,foodColor[2]);frame(d,x+2,y+6,36,14,dark);
+    rect(d,x-3,y+8,7,4,dark);rect(d,x+37,y+8,6,4,dark);
+    rect(d,x+3,y+4,34,3,RGB(229,128,78));rect(d,x+7,y+2,7,3,RGB(175,117,87));
+    rect(d,x+19,y+1,4,4,RGB(255,226,57));rect(d,x+29,y+3,6,2,RGB(44,174,95));
+  }else{
+    for(i=0;i<8;i++){rect(d,x+4+i*4,y+2+i*2,5,18-i*2,RGB(232,64,73));rect(d,x+4+i*4,y+2+i*2,4,15-i*2>0?15-i*2:1,cream);}
+    rect(d,x+1,y,5,20,RGB(240,189,76));
+    rect(d,x+10,y+7,5,3,foodColor[3]);rect(d,x+20,y+12,5,3,foodColor[3]);
+  }
+}
+
+function deliveryEyes(d, x, y, happy) {
+  var i;for(i=0;i<2;i++){
+    var ex=x+i*12;
+    if(happy){rect(d,ex,y+2,2,2,RGB(25,22,28));rect(d,ex+2,y,2,2,RGB(25,22,28));rect(d,ex+4,y+2,2,2,RGB(25,22,28));}
+    else rect(d,ex+2,y,2,6,RGB(25,22,28));
+  }
+}
+
+function drawCustomer(d, type) {
+  var x=CUSTOMER_X,y=GY-65;var c=foodColor[type];var msg="";
+  if(type==1){
+    
+    rect(d,x,y+35,58,20,c);rect(d,x+43,y+17,24,25,c);
+    rect(d,x+62,y+23,18,12,c);rect(d,x+76,y+22,5,6,RGB(35,17,24));
+    rect(d,x+45,y+27,9,21,RGB(48,18,27));
+    rect(d,x-5,y+24,5,23,c);rect(d,x-7,y+18,4,10,c);
+    rect(d,x+2,y+53,5,12,c);rect(d,x+13,y+53,5,10,c);
+    rect(d,x+43,y+53,5,12,c);rect(d,x+53,y+53,5,10,c);
+    if(thanks[type]){rect(d,x+57,y+23,2,2,RGB(25,22,28));rect(d,x+59,y+21,2,2,RGB(25,22,28));rect(d,x+61,y+23,2,2,RGB(25,22,28));}
+    else rect(d,x+59,y+21,2,6,RGB(25,22,28));
+  }else if(type==3){
+    rect(d,x+3,y+29,40,28,RGB(249,249,244));rect(d,x+22,y+8,20,34,RGB(249,249,244));
+    rect(d,x+21,y+3,21,7,c);rect(d,x+29,y-2,8,7,c);
+    rect(d,x+40,y+24,12,4,RGB(255,220,20));rect(d,x+40,y+30,10,3,RGB(255,220,20));
+    rect(d,x+14,y+55,3,10,c);rect(d,x+31,y+55,3,10,c);
+    deliveryEyes(d,x+25,y+16,thanks[type]>0);
+  }else{
+    var longBody=type==1;
+    rect(d,x+4,y+(longBody?37:27),longBody?56:35,longBody?20:30,c);
+    rect(d,x+9,y+8,29,29,c);rect(d,x+8,y,7,13,c);rect(d,x+30,y,7,13,c);
+    rect(d,x+8,y+55,7,10,c);rect(d,x+(longBody?49:28),y+55,7,10,c);
+    rect(d,x-2,y+42,7,4,c);rect(d,x-2,y+36,3,8,c);
+    if(type==1){rect(d,x+7,y+13,7,24,RGB(56,21,29));rect(d,x+34,y+20,17,9,c);}
+    if(type==0){rect(d,x+15,y+25,17,8,RGB(255,164,189));rect(d,x+18,y+27,2,4,RGB(80,40,48));rect(d,x+26,y+27,2,4,RGB(80,40,48));}
+    if(type==2){rect(d,x+8,y+28,32,9,RGB(240,228,177));rect(d,x+14,y-4,4,8,RGB(238,233,217));rect(d,x+31,y-4,4,8,RGB(238,233,217));}
+    deliveryEyes(d,x+15,y+16,thanks[type]>0);
+  }
+  if(thanks[type]||abs(px-CUSTOMER_X)<150){
+    msg=fmt(thanks[type]?"Thanks!":"%s...",foodName[type]);
+    text(d,x-10,y-24,RGB(250,240,225),msg);
+    if(!thanks[type])text(d,x-10,y-42,RGB(250,240,225),"[D] DELIVER");
+  }
+}
+
+function drawDeliveryWorld(d) {
+  var i;
+  for(i=0;i<4;i++){
+    if(room==1+i*2)drawCustomer(d,i);
+    if(room==DEPTH1+i){
+      var x=SHOP_X,y=GY-132;
+      rect(d,x,y+24,120,108,foodColor[i]);rect(d,x+12,y+10,96,18,foodColor[i]);rect(d,x+27,y,66,14,foodColor[i]);
+      rect(d,x+15,y+43,90,39,RGB(153,216,229));drawFood(d,i,x+39,y+52,0);
+      text(d,x+5,y-22,RGB(246,240,228),foodName[i]);
+      if(!carrying[i])drawFood(d,i,x+39,GY-29,1);
+      if(abs(px-(x+60))<140)text(d,x-15,y-42,RGB(255,245,210),carrying[i]?"OUT FOR DELIVERY":"[D] PICK UP");
+    }
+  }
+}
+
+function drawCarriedFood(d) {
+  var i,n=0;for(i=0;i<4;i++)if(carrying[i]){
+    
+    drawFood(d,i,px-6,py-(car.riding?63:35)-n*29,1);n++;
+  }
+}
+
+function update() {
+  var i,j; var b={}; var z=key['Z'];
+  if(fullscreen_hide_tick > 0) { fullscreen_hide_tick--; if(fullscreen_hide_tick <= 0 && !escape_seq) ShowWindow(fullscreenButton, SW_SHOW); }
+  if(escape_seq) { escape_tick--; if(escape_tick<=0) PostQuitMessage(0); return; }
+  if(won)return;
+  tick++;
+  engineSound();
+  if(tick % 8 == 0) {
+    var step = Math.trunc(tick / 8) % 18;
+    if (step < 15) {
+      var n = step % 5;
+      var f = (n==0)?220 : (n==1)?261 : (n==2)?329 : (n==3)?392 : 440;
+      Beep(f, 1);
+    } else if (step == 15) {
+      Beep(1046, 1);
+    } else if (step == 16) {
+      Beep(1568, 2);
+    }
+  }
+
+  if(key['1'])weapon=1;if(key['2'])weapon=2;if(key['3'])weapon=3;if(key['4'])weapon=4;if(key['5'])weapon=5;
+  if(key['6'])weapon=6;if(key['7'])weapon=7;if(key['8'])weapon=8;if(key['9'])weapon=9;
+  updateCar();
+  if(key['C']&&!car.riding) {
+    if((key[VK_LEFT]||key[VK_RIGHT])&&!dash){dash=1;dashTime=14;face=key[VK_LEFT]?-1:1;tone(880);}
+    else if(key[VK_DOWN]&&ground){pvy=-34;ground=0;tone(520);}
+    else if(key[VK_UP]){php+=20;if(php>100)php=100;tone(1040);spawn(10,px+14,py+22,-3,-5,15,0);spawn(10,px+14,py+22,0,-7,15,0);spawn(10,px+14,py+22,3,-4,15,0);}
+    key['C']=0;
+  }
+  if(car.riding){pvx=0;if(key[VK_LEFT]){pvx=-8;face=-1;}if(key[VK_RIGHT]){pvx=8;face=1;}}
+  else if(dash){pvx=face*14;if(--dashTime<=0)dash=0;} else {pvx=0;if(key[VK_LEFT]){pvx=-5;face=-1;}if(key[VK_RIGHT]){pvx=5;face=1;}}
+  if(key['X']&&ground){pvy=-21;ground=0;tone(740);key['X']=0;}
+  pvy+=2; if(pvy>22)pvy=22; px+=pvx;py+=pvy;ground=0;
+  if(room<TUNNEL){if(px>W){if(room<ENDBASE)travel(room+1,4,py>356?356:py-12);else px=W-28;}if(px<-28){if(room>0)travel(room-1,W-32,py>356?356:py-12);else px=0;}if(room==0&&px<0)px=0;if(room==ENDBASE&&px>W-28)px=W-28;}else{if(px<0)px=0;if(px>roomWidth(room)-28)px=roomWidth(room)-28;}
+  for(i=0;i<platformCount(room);i++){platform(room,i,b);if(px+28>b.x+4&&px<b.x+b.w-4&&pvy>=0&&py+44>=b.y&&py+44-pvy<=b.y+3){py=b.y-44;pvy=0;ground=1;}}
+  
+  if(room==0&&px>350&&px<450&&key[VK_UP]){
+    if(player_coins>=10){player_coins-=10;player_level++;tone(1400);}
+    else tone(200);
+    key[VK_UP]=0;
+  }
+  if((room==2||room==8)&&px+28>380&&px<420&&pressed[VK_DOWN])travel(TUNNEL,room==2?12:762,356);
+  else if(room==TUNNEL&&pressed[VK_UP]&&px+28>6&&px<42)travel(2,380,356);
+  else if(room==TUNNEL&&pressed[VK_UP]&&px+28>758&&px<794)travel(8,380,356);
+  else if(room>=TUNNEL){
+    if(pressed['Q']&&room>=DEPTH1)travel(room-1,80,356);
+    else if(pressed['E']&&room<TOTAL_ROOMS-1)travel(room+1,80,356);
+  }
+  if(py>H+44){py=-44;pvy=0;invuln=23;}
+  syncCar();
+  updateCats();
+  updateDelivery();
+  if(!car.riding&&weapon==8) { if(z) {if(charge<100)charge+=3;} else if(zWas&&charge>0){spawn(8,px+(face>0?28:0),py+22,face*28,0,40,charge);tone(300);charge=0;} }
+  else if(!car.riding&&z && (!zWas || weapon==3||weapon==5||weapon==7))fire();
+  zWas=z;
+  if(room != old_room) {
+    old_room = room;
+    if(room>=DEPTH1){
+      var base=BASE_ENEMIES+(room-DEPTH1)*4,count=0,extra=rand()%5;
+      for(i=0;i<BASE_ENEMIES;i++)if(enemy[i].room==room&&(enemy[i].alive||enemy[i].kind==1))count++;
+      if(extra>10-count)extra=10-count;if(extra<0)extra=0;
+      for(i=0;i<4;i++){
+        var n=base+i;zero(enemy[n]);
+        enemy[n].room=room;
+        for(j=0;j<3;j++)cats[j].struck[n]=0;
+        if(i<extra){
+          var x=780+rand()%650;
+          addEnemy(n,0,x,352,1);enemy[n].room=room;
+        }
+      }
+    }
+    for(i=0;i<MAXE;i++) {
+      if(i<BASE_ENEMIES && enemy[i].kind == 1 && enemy[i].room == room) {
+        enemy[i].alive = 1; enemy[i].hp = 100; enemy[i].x = enemy[i].sx; enemy[i].dir = 2; enemy[i].vy = 0;
+      }
+    }
+  }
+  for(i=0;i<MAXE;i++)if(enemy[i].alive){
+    enemy[i].x+=enemy[i].vx;
+    enemy[i].vx=Math.trunc(enemy[i].vx*8/10);
+    if(enemy[i].kind == 1) {
+      if(enemy[i].x < enemy[i].sx - 80) enemy[i].dir = 2;
+      if(enemy[i].x > enemy[i].sx + 80) enemy[i].dir = -2;
+      enemy[i].x += enemy[i].dir;
+    }
+    enemy[i].vy += 2; if(enemy[i].vy > 22) enemy[i].vy = 22;
+    enemy[i].y += enemy[i].vy;
+    for(j=0;j<platformCount(enemy[i].room);j++){
+      platform(enemy[i].room,j,b);
+      if(enemy[i].x+30>b.x+4 && enemy[i].x<b.x+b.w-4 && enemy[i].vy>=0 && enemy[i].y+48>=b.y && enemy[i].y+48-enemy[i].vy<=b.y+3){
+        enemy[i].y=b.y-48; enemy[i].vy=0;
+      }
+    }
+    if(enemy[i].x<0)enemy[i].x=0;if(enemy[i].x>roomWidth(enemy[i].room)-30)enemy[i].x=roomWidth(enemy[i].room)-30;
+    if(enemy[i].room==room&&hit(car.riding?car.x:px,car.riding?car.y:py,car.riding?64:28,car.riding?32:44,enemy[i].x,enemy[i].y,30,48)&&invuln==0){
+      if(car.riding){
+        var push=enemy[i].x+15>car.x+32?1:-1;
+        enemy[i].hp-=20;enemy[i].flash=5;enemy[i].vx=push*24;
+        enemy[i].x+=push*16;enemy[i].vy=-6;
+        if(enemy[i].hp<=0){dropCoins(room,enemy[i].x+15,enemy[i].y+24);enemy[i].alive=0;}
+        damageCar(5);
+      }else {php-=enemy[i].room>=DEPTH1?5+(enemy[i].room-DEPTH1+1)*5:5;pvy=-10;ground=0;}
+      invuln=15;tone(200);
+    }
+    if(enemy[i].flash) enemy[i].flash--;
+    if(enemy[i].y > 450) { enemy[i].alive = 0; if(enemy[i].kind == 0) { player_coins += 5; tone(1800); } }
+  }
+  if(invuln)invuln--;
+  for(i=0;i<MAXP;i++)if(shot[i].on){var q=shot[i];q.x+=q.vx;q.y+=q.vy;q.life--;
+    if(q.kind==4||q.kind==11)q.vy+=1;
+    if(q.kind==6){if(q.life%45==0){var d=(q.life&1)?1:-1;spawn(5,q.x,q.y,d*8,0,50,0);}}
+    
+    var hitEnemy = 0;
+    if((q.kind >= 1 && q.kind <= 5) || q.kind == 9 || q.kind == 8 || q.kind == 11 || q.kind == 12) {
+      for(j=0;j<MAXE;j++) {
+        if(enemy[j].alive && enemy[j].room==q.room && hit(q.x,q.y,8,8,enemy[j].x,enemy[j].y,30,48)) {
+          var dmg = 0;
+          if(q.kind==12) dmg=72;
+          else if(q.kind==11) dmg=24;
+          else if(q.kind==1) dmg=9;
+          else if(q.kind==2) dmg=40;
+          else if(q.kind==3) dmg=4;
+          else if(q.kind==4) dmg=50;
+          else if(q.kind==5 || q.kind==9) dmg=7;
+          else if(q.kind==8) dmg = 35 + (q.val * 35 / 100);
+          
+          dmg =Math.trunc( dmg * (100 + (player_level - 1) * (q.kind==11||q.kind==12?5:10)) / 100);
+          enemy[j].hp -= dmg;
+          enemy[j].flash = 5;
+          enemy[j].vx += (q.vx>0 ? 1 : -1) * 15;
+          if(enemy[j].hp<=0) { if(enemy[j].alive) dropCoins(enemy[j].room, enemy[j].x+15, enemy[j].y+24); enemy[j].alive=0; }
+          hitEnemy = 1;
+          if(q.kind != 3) { q.on=0; break; } 
+        }
+      }
+    }
+    
+    if(q.kind==2 && (q.x<0||q.x>roomWidth(q.room)||q.y>GY || hitEnemy)){ if(!hitEnemy) hurtEnemies(q.x,q.y,75,45); q.on=0; }
+    if(q.kind==4 && (q.y>GY || hitEnemy)){ if(!hitEnemy) hurtEnemies(q.x,q.y,85,55); q.on=0; }
+    if((q.kind==1 || q.kind==9 || q.kind==8) && hitEnemy){ q.on=0; }
+    
+    if(q.kind==11&&q.y>GY)q.on=0;
+    if(q.life<=0||q.x<-20||q.x>roomWidth(q.room)+20)q.on=0;
+  }
+  if(!flagTaken&&room==ENDBASE&&hit(px,py,28,44,770,360,14,40)){flagTaken=1;tone(1200);}
+  if(flagTaken&&room==0&&hit(px,py,28,44,14,360,14,40)&&!won){won=1;ShowWindow(restartButton,SW_SHOW);ShowWindow(continueButton,SW_SHOW);ShowWindow(escapeButton,SW_SHOW);tone(1400);}
+    var hit_coin = 0;
+  for(i=0;i<MAXC;i++) {
+    if(coin[i].on && coin[i].room==room) {
+      coin[i].vy += 1; if(coin[i].vy>12) coin[i].vy=12;
+      coin[i].y += coin[i].vy;
+      for(j=0;j<platformCount(room);j++) {
+        platform(room,j,b);
+        if(coin[i].x+6>b.x && coin[i].x<b.x+b.w && coin[i].vy>=0 && coin[i].y+6>=b.y && coin[i].y+6-coin[i].vy<=b.y+3) {
+          coin[i].y = b.y-6; coin[i].vy = 0;
+        }
+      }
+      if(hit(px,py,28,44,coin[i].x,coin[i].y,6,6)) {
+        coin[i].on = 0; player_coins++; hit_coin = 1;
+      }
+    }
+  }
+  if(hit_coin) tone(1800);
+  
+  if(php<=0){tone(150);reset();}
+}
+
+function drawShortcut(d, x, up) {
+  var i;var gray=RGB(201,201,205),ink=RGB(38,38,45);
+  
+  for(i=0;i<4;i++)rect(d,x+i*9,342+i*10,9,58-i*10,gray);
+  rect(d,x,384,36,16,gray);frame(d,x,384,36,16,ink);
+  rect(d,x+7,351,2,24,ink);rect(d,x+18,353,2,24,ink);
+  for(i=0;i<4;i++){rect(d,x+7-i,351+i,1,1,ink);rect(d,x+8+i,351+i,1,1,ink);
+    rect(d,x+18-i,377-i,1,1,ink);rect(d,x+19+i,377-i,1,1,ink);}
+  text(d,x+2,384,ink,up?"UP":"DN");
+  rect(d,x-1,320,38,18,RGB(35,38,48));
+  
+  rect(d,x+16,324,3,10,RGB(250,250,250));
+  for(i=0;i<5;i++)rect(d,x+12+i,up?328-i:329+i,11-i*2,1,RGB(250,250,250));
+}
+
+function paint(d) {
+  var i; var b={}; var t="",rname="";
+  drawOffset=0;
+  if(escape_seq) { rect(d,0,0,W,H,RGB(0,0,0)); text(d,150,200,RGB(255,255,255),"BlueMung escaped the cave and went home, and eat dinner with family."); return; }
+  rect(d,0,0,W,H,room>=TUNNEL?bg[6]:bg[Math.trunc(room/2)]);
+  if(room<TUNNEL&&room%2){
+    var colors=[RGB(223,169,190),RGB(164,204,184),RGB(231,197,164),RGB(191,179,213),RGB(193,209,160)];
+    var softbg=[RGB(247,230,237),RGB(232,243,229),RGB(249,237,224),RGB(238,232,247),RGB(241,245,223)];
+    var c=colors[Math.trunc(room/2)];rect(d,0,0,W,H,softbg[Math.trunc(room/2)]);
+    for(i=0;i<9;i++){
+      var x=i*100,y=110+(i%3)*30;
+      rect(d,x,y,48,8,RGB(225,242,250));
+      rect(d,x+9,y-6,29,9,RGB(249,252,255));
+      rect(d,x+5,y+5,39,4,RGB(239,248,253));
+      frame(d,x+14,175,24,100,RGB(231,238,244));
+    }
+    for(i=0;i<platformCount(room);i++){platform(room,i,b);rect(d,b.x,b.y,b.w,b.h,c);rect(d,b.x,b.y,b.w,3,RGB(255,240,180));}
+  }
+  drawOffset=cameraX();
+  for(i=0;i<platformCount(room);i++){platform(room,i,b);if(room>=TUNNEL||room%2==0)rect(d,b.x,b.y,b.w,b.h,RGB(74,74,74));}
+  if(room==2||room==8)drawShortcut(d,382,0);
+  if(room==TUNNEL){drawShortcut(d,6,1);drawShortcut(d,758,1);}
+  if(room>=TUNNEL){
+    drawOffset=0;
+    text(d,220,88,RGB(255,230,120),room==TUNNEL?"[E] ENTER B1":room==TOTAL_ROOMS-1?"[Q] UP - LAST FLOOR":"[Q] UP    [E] DOWN");
+    text(d,220,106,RGB(200,220,255),"One press per floor - safe arrival");
+    if(room>=DEPTH1){t=fmt("BOX DAMAGE: %d",5+(room-DEPTH1+1)*5);text(d,220,124,RGB(255,130,100),t);}
+    drawOffset=cameraX();
+    
+    rect(d,50,274,82,126,RGB(192,192,192));
+    rect(d,58,316,31,76,RGB(149,213,227));rect(d,95,316,30,76,RGB(149,213,227));
+    rect(d,81,344,6,17,RGB(177,185,187));rect(d,97,344,6,17,RGB(177,185,187));
+    rect(d,135,344,18,56,RGB(185,185,185));
+    rect(d,141,349,4,4,RGB(255,248,75));rect(d,138,353,10,4,RGB(255,248,75));
+    rect(d,138,379,10,4,RGB(255,248,75));rect(d,141,383,4,4,RGB(255,248,75));
+  }
+  drawDeliveryWorld(d);
+  drawCar(d);
+  for(catIndex=0;catIndex<3;catIndex++)drawCat(d);catIndex=0;
+  if(room==0){
+    flag(d,14,RGB(61,107,255));
+    rect(d,400,356,28,44,RGB(95,211,255));
+    rect(d,400,356,28,10,RGB(224,47,47));
+    rect(d,403,366,5,5,RGB(255,255,255));
+    text(d,355,330,RGB(255,255,100),"[^] UPGRADE (10C)");
+  } if(room==ENDBASE&&!flagTaken)flag(d,770,RGB(224,47,47));
+  for(i=0;i<MAXP;i++)if(shot[i].on&&shot[i].room==room){var c=RGB(255,255,255);
+    if(shot[i].kind==11) c=RGB(183,124,88);
+    else if(shot[i].kind==1) c=RGB(255,221,85);
+    else if(shot[i].kind==2) c=RGB(255,138,61);
+    else if(shot[i].kind==3) c=RGB(255,60,220);
+    else if(shot[i].kind==4) c=RGB(123,255,90);
+    else if(shot[i].kind==5) c=RGB(255,228,92);
+    else if(shot[i].kind==6) c=RGB(255,180,0);
+    else if(shot[i].kind==9) c=RGB(100,180,255);
+    else if(shot[i].kind==8) c=RGB(255,50,50);
+    else if(shot[i].kind==7 || shot[i].kind==10) c=RGB(50,255,50);
+    var pw=7,ph=5; if(shot[i].kind==6){pw=16;ph=20;}else if(shot[i].kind==1){pw=6;ph=6;}else if(shot[i].kind==8){pw=14;ph=4;}else if(shot[i].kind==10){pw=4;ph=4;}
+    rect(d,shot[i].x-3,shot[i].y-2,pw,ph,c);}
+  for(i=0;i<MAXE;i++)if(enemy[i].alive&&enemy[i].room==room){
+    var ec = (enemy[i].kind==1) ? RGB(150,50,200) : RGB(224,86,86);
+    if(enemy[i].flash) ec = RGB(255,182,193);
+    rect(d,enemy[i].x,enemy[i].y,30,48,ec);
+    rect(d,enemy[i].x,enemy[i].y-8,30,4,RGB(50,0,0));
+    rect(d,enemy[i].x,enemy[i].y-8,enemy[i].hp*30/100,4,RGB(60,255,60));
+  }
+  var pc = invuln?(invuln&4?RGB(255,0,255):RGB(95,211,255)):(dash?RGB(255,228,92):RGB(95,211,255));
+  if(car.riding){
+    rect(d,px+8,py-2,10,14,pc);rect(d,px+(face>0?18:0),py+3,8,8,pc);
+    rect(d,px+(face>0?14:10),py+2,3,3,RGB(255,255,255));
+  } else if(face>0) {
+    rect(d,px,py+22,6,12,pc); rect(d,px,py+18,4,4,pc); rect(d,px+6,py+16,14,18,pc);
+    rect(d,px+10,py,10,16,pc); rect(d,px+20,py+6,8,10,pc); rect(d,px+26,py+4,2,2,pc);
+    rect(d,px+20,py+22,8,4,pc); rect(d,px+6,py+34,6,10,pc); rect(d,px+14,py+34,6,10,pc);
+    rect(d,px+16,py+6,3,3,RGB(255,255,255));
+  } else {
+    rect(d,px+22,py+22,6,12,pc); rect(d,px+24,py+18,4,4,pc); rect(d,px+8,py+16,14,18,pc);
+    rect(d,px+8,py,10,16,pc); rect(d,px,py+6,8,10,pc); rect(d,px,py+4,2,2,pc);
+    rect(d,px,py+22,8,4,pc); rect(d,px+16,py+34,6,10,pc); rect(d,px+8,py+34,6,10,pc);
+    rect(d,px+9,py+6,3,3,RGB(255,255,255));
+  }
+  if(flagTaken){rect(d,px+13,py-22,2,22,RGB(224,47,47));rect(d,px+15,py-22,15,12,RGB(224,47,47));}
+  drawCarriedFood(d);
+  drawOffset=0;
+  if(deliveryNotice)text(d,190,66,RGB(255,232,160),deliveryMessage);
+  if(room>=DEPTH1)rname=fmt("Basement B%d",room-DEPTH1+1);
+  else rname=fmt(room==TUNNEL?"Tunnel":"Room %d",room+1); text(d,10,8,RGB(255,255,255),rname);
+  t=fmt("Weapon [%d] %s",weapon,wn[weapon]);text(d,10,26,RGB(255,255,255),t);
+  t=fmt("COINS: %d",player_coins);text(d,10,44,RGB(255,215,0),t);
+  t=fmt("LEVEL: %d",player_level);text(d,10,62,RGB(100,255,100),t);
+  drawOffset=cameraX();
+  for(i=0;i<MAXC;i++)if(coin[i].on&&coin[i].room==room){rect(d,coin[i].x,coin[i].y,6,6,RGB(255,215,0));rect(d,coin[i].x+1,coin[i].y+1,4,4,RGB(255,255,100));}
+  drawOffset=0;
+  if(flagTaken)text(d,260,200,RGB(255,210,61),"FLAG TAKEN - RETURN TO ROOM 1!");
+  rect(d,10,428,150,10,RGB(80,0,0));rect(d,10,428,php*150/100,10,RGB(230,51,51));frame(d,10,428,150,10,RGB(255,255,255));text(d,10,413,RGB(255,255,255),"HP");
+  if(car.exists){t=fmt("CAR HP %d/100  [B] %s",car.hp,car.riding?"EXIT":"BOARD NEAR CAR");text(d,180,415,RGB(120,255,140),t);}
+  else text(d,180,415,RGB(120,255,140),"[B] BUY CAR (5C)");
+  if(carNotice)text(d,180,395,RGB(255,220,100),car.exists?"Return to your parked car to board.":car.hp==0&&player_coins>=5?"Car lost - [B] buy another (5C)":"Need 5 coins to buy a car.");
+  if(weapon==8&&!car.riding){rect(d,640,428,150,10,RGB(80,0,0));rect(d,640,428,charge*150/100,10,RGB(255,51,51));text(d,640,413,RGB(255,255,255),"CHARGE");}
+  for(i=0;i<SURFACE;i++){rect(d,470+i*29,40,26,16,i==room?RGB(255,207,61):RGB(85,85,85));t=fmt("%d",i+1);text(d,474+i*29,41,RGB(20,20,20),t);}
+  if(won){rect(d,150,120,500,180,RGB(0,0,0));frame(d,150,120,500,180,RGB(255,210,61));text(d,292,155,RGB(255,210,61),"YOU WIN!");text(d,230,190,RGB(255,255,255),"Enemy flag returned to your base.");text(d,210,230,RGB(180,220,255),"Click RESTART, CONTINUE, or ESCAPE");}
+}
+
+// Small, gently enveloped Web Audio sounds. No sample downloads.
+let audio=null,master=null,paused=true,started=false,muted=false,music=false,nextEngine=0,lastTone=-1000;
+function unlockAudio(){try{if(!audio){audio=new(window.AudioContext||window.webkitAudioContext)();master=audio.createGain();master.gain.value=+document.getElementById('volume').value;master.connect(audio.destination);}audio.resume().catch(()=>{});}catch(e){document.getElementById('status').textContent='오디오를 사용할 수 없어 소리 없이 실행합니다.';}}
+function note(f,to,duration=.12,level=.08,delay=0,type='sine'){
+ if(!audio||audio.state!=='running'||muted||paused)return;
+ const at=audio.currentTime+delay,o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(f,at);o.frequency.exponentialRampToValueAtTime(Math.max(30,to),at+duration);
+ g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(level,at+.012);g.gain.exponentialRampToValueAtTime(.0001,at+duration);o.connect(g);g.connect(master);o.start(at);o.stop(at+duration+.02);o.onended=()=>{o.disconnect();g.disconnect();};
+}
+function tone(n){if(gameTime-lastTone<65)return;lastTone=gameTime;note(Math.min(n,1000),Math.min(n,1000)*.8,.09,.045);}
+function Beep(n,ms){if(music)note(n,n,.075,.018);}
+function catSound(type){
+ if(type===2){note(220,310,.22,.055);note(265,185,.23,.035,.13);}
+ else if(type===1){note(570,790,.12,.06);note(700,450,.2,.045,.10);}
+ else {note(460,720,.15,.055);note(720,390,.23,.045,.10);}
+}
+function engineSound(){if(!car.riding||!pvx||gameTime<nextEngine)return;nextEngine=gameTime+850;[0,.12,.25,.48,.61].forEach((d,i)=>note(i%3===2?125:155,85,.09,.065,d,'triangle'));}
+function clearKeys(){zero(key);zero(pressed);}
+function setPaused(v){paused=v;clearKeys();document.getElementById('pause').textContent=v?'계속하기':'일시정지';if(audio)master.gain.setTargetAtTime(v||muted?0:+document.getElementById('volume').value,audio.currentTime,.02);}
+function start(){unlockAudio();started=true;setPaused(false);document.getElementById('cover').hidden=true;document.getElementById('status').textContent='빨간 깃발을 아군 기지로! 배달과 고양이 동료로 코인을 모아보세요.';canvas.focus();}
+function fresh(keep=false){const c=player_coins,l=player_level;reset();if(keep){player_coins=c;player_level=l;}nextEngine=0;lastFire.fill(0);start();}
+document.getElementById('start').onclick=start;
+document.getElementById('new').onclick=()=>fresh();
+document.getElementById('restart').onclick=()=>fresh();
+document.getElementById('continue').onclick=()=>fresh(true);
+document.getElementById('escape').onclick=()=>{escape_seq=1;escape_tick=300;['restart','continue','escape'].forEach(id=>ShowWindow(id,0));};
+document.getElementById('pause').onclick=()=>{if(!started)start();else setPaused(!paused);};
+document.getElementById('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.getElementById('stage').requestFullscreen();canvas.focus();}catch(e){document.getElementById('status').textContent='이 브라우저에서는 전체화면을 사용할 수 없습니다.';}};
+document.getElementById('mute').onclick=()=>{muted=!muted;document.getElementById('mute').textContent=muted?'소리 켜기':'음소거';if(master)master.gain.setTargetAtTime(muted||paused?0:+document.getElementById('volume').value,audio.currentTime,.02);};
+document.getElementById('volume').oninput=e=>{if(master)master.gain.setTargetAtTime(muted||paused?0:+e.target.value,audio.currentTime,.02);};
+document.getElementById('music').onchange=e=>music=e.target.checked;
+function mapped(e){return e.code.startsWith('Key')?e.code.slice(3):e.code.startsWith('Digit')?e.code.slice(5):e.key;}
+window.addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea'))return;const k=mapped(e);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Escape','Enter','X','Z','C','B','D','E','Q','1','2','3','4','5','6','7','8','9'].includes(k))e.preventDefault();if(k==='Escape'){if(!e.repeat&&started)setPaused(!paused);return;}if(!started&&(k==='Enter'||k===' ')){start();return;}if(paused)return;if(!e.repeat)pressed[k]=1;key[k]=1;});
+window.addEventListener('keyup',e=>{key[mapped(e)]=0;});
+window.addEventListener('blur',()=>{if(started)setPaused(true);});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&started)setPaused(true);});
+let prior=0,acc=0;
+function loop(now){if(!prior)prior=now;const elapsed=Math.min(now-prior,100);prior=now;if(!paused){acc+=elapsed;while(acc>=16){gameTime+=16;update();clearPressed();acc-=16;}}else acc=0;paint(ctx);requestAnimationFrame(loop);}
+function clearPressed(){zero(pressed);}
+reset();paint(ctx);requestAnimationFrame(loop);
+
+// --- 모바일 가상 버튼 (반투명 오버레이) ---
+function vkey(code,keyName,down){
+  const ev=new KeyboardEvent(down?'keydown':'keyup',{code,key:keyName,bubbles:true,cancelable:true});
+  window.dispatchEvent(ev);
+}
+document.querySelectorAll('#vpad .vbtn').forEach(btn=>{
+  const code=btn.dataset.code,keyName=btn.dataset.key;
+  if(!code)return;
+  const down=e=>{e.preventDefault();if(!started){start();return;}btn.classList.add('active');vkey(code,keyName,true);};
+  const up=e=>{e.preventDefault();btn.classList.remove('active');vkey(code,keyName,false);};
+  btn.addEventListener('pointerdown',down);
+  btn.addEventListener('pointerup',up);
+  btn.addEventListener('pointercancel',up);
+  btn.addEventListener('pointerleave',up);
+  btn.addEventListener('contextmenu',e=>e.preventDefault());
+});
+document.getElementById('start').addEventListener('click',()=>document.getElementById('vpad').classList.add('show'));
+document.getElementById('new').addEventListener('click',()=>document.getElementById('vpad').classList.add('show'));
+document.getElementById('continue').addEventListener('click',()=>document.getElementById('vpad').classList.add('show'));
+document.getElementById('restart').addEventListener('click',()=>document.getElementById('vpad').classList.add('show'));
+</script></html>
