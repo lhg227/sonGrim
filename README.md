@@ -1,2 +1,2 @@
 # sonGrim
-html files with hand drawings
+html files and may be going to upload some hand drawings
