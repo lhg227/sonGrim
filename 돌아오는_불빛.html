@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#243b38">
+<title>돌아오는 불빛 — 작은 저녁 어드벤처</title>
+<style>
+:root{--paper:#f4eedc;--ink:#263e38;--muted:#78847b;--leaf:#526a56;--gold:#f6cb78;--line:#d7d8c3;--dark:#203832;--soft:#e9e8d5}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#e6e7d8;color:var(--ink)}
+body{font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans CJK KR",sans-serif;background-image:radial-gradient(#7c90771c 1px,transparent 1px);background-size:7px 7px}
+button,input{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}button:focus-visible{outline:3px solid #c07939;outline-offset:3px}button:disabled{cursor:default;opacity:.48}
+button{border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);padding:10px 14px;font-size:13px;transition:background .12s,transform .12s}button:hover{background:#fff9e8}button:active{transform:translateY(1px)}.primary{background:var(--dark);border-color:var(--dark);color:var(--paper)}.primary:hover{background:#3d584c}.quiet{background:transparent}.small{font-size:12px;padding:7px 11px}.hidden{display:none!important}
+.page{max-width:1170px;margin:auto;padding:30px 28px 16px}.mast{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:20px}.eyebrow{font-family:monospace;letter-spacing:.18em;font-size:10px;color:#687a66;margin-bottom:9px}.mast h1{font-size:29px;letter-spacing:-1.6px;margin:0;font-weight:800}.mast p{font-size:12px;color:#637369;margin:9px 0 0;line-height:1.65}.mast-note{text-align:right;font-size:11px;color:#6b7d6b;line-height:1.9}.sun{width:25px;height:25px;border:5px solid #d39955;box-shadow:0 0 0 5px #e7d4a1;margin:0 5px 13px auto}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:22px;align-items:start}.console{background:#304b44;padding:12px;border-radius:14px 14px 32px 14px;box-shadow:0 5px 0 #1c342e,0 14px 30px #26382d18;border:1px solid #4d6656}.console-top{color:#c7d0b6;display:flex;justify-content:space-between;font-size:10px;letter-spacing:.12em;padding:0 4px 9px;font-family:monospace}.power{color:#f3ce8b}.power:before{content:"";display:inline-block;width:5px;height:5px;background:#eccc89;margin-right:7px;box-shadow:0 0 7px #ffde9a}
+.viewport{position:relative;background:#74906a;aspect-ratio:4/3;overflow:hidden;border:3px solid #1d322e;border-radius:3px;isolation:isolate}.world{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;outline:none}.hud{position:absolute;inset:10px 10px auto;display:flex;justify-content:space-between;gap:6px;pointer-events:none}.hud-pill{background:#20382ee6;color:#fbf0c9;font-size:11px;padding:7px 9px;border:1px solid #698266a0;border-radius:4px;box-shadow:0 2px 0 #13282038}.hud-right{text-align:right}.hud-mini{display:block;font-size:9px;color:#cbd0b7;margin-top:4px}.objective{position:absolute;bottom:10px;left:10px;right:10px;display:flex;align-items:center;gap:8px;pointer-events:none}.objective-text{max-width:84%;background:#20382ee6;color:#f9f0d1;padding:8px 10px;font-size:11px;line-height:1.5;border:1px solid #86917688;border-radius:4px}.objective-text b{color:var(--gold);font-weight:600}.context{position:absolute;left:50%;bottom:53px;transform:translateX(-50%);white-space:nowrap;background:#faf0d9ed;border:1px solid #516e55;color:#264535;box-shadow:0 2px 0 #263a3550;padding:6px 11px;font-size:11px;border-radius:5px;pointer-events:none}.toast{position:absolute;top:49px;left:50%;transform:translateX(-50%);background:#fbf2ddeb;border:1px solid #b4b28d;padding:10px 14px;font-size:12px;text-align:center;max-width:89%;width:max-content;line-height:1.6;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .2s}.toast.show{opacity:1}.trust{position:absolute;bottom:89px;left:50%;transform:translateX(-50%);padding:9px 12px;background:#f8efdde8;border-radius:5px;font-size:11px;min-width:180px;text-align:center}.trust-track{height:4px;background:#c7cbb4;margin-top:6px}.trust-fill{height:100%;background:#638465;width:0%}
+.console-bottom{display:flex;gap:7px;align-items:center;justify-content:space-between;padding:11px 1px 1px}.toolbar{display:flex;gap:6px}.toolbar button{border-color:#657b60;color:#e8e8c9;background:#3e584a;padding:7px 10px;font-size:11px}.toolbar button:hover{background:#536c53}.brand{font-family:monospace;font-size:9px;letter-spacing:.13em;color:#afbea3}.touchpad{display:none;justify-content:space-between;gap:10px;padding:16px 6px 8px;touch-action:none;user-select:none;-webkit-user-select:none}.dpad{display:grid;grid-template-columns:42px 42px 42px;grid-template-rows:38px 38px 38px;gap:3px}.dpad button{padding:0;font-size:18px;border:0;background:#1e352f;color:#dce6c6;box-shadow:0 3px 0 #122922;border-radius:7px;touch-action:none}.dpad button.down{background:#6b8460}.dpad .up{grid-column:2}.dpad .left{grid-column:1;grid-row:2}.dpad .right{grid-column:3;grid-row:2}.dpad .downkey{grid-column:2;grid-row:3}.dpad .center{grid-column:2;grid-row:2;align-self:center;justify-self:center;width:17px;height:17px;background:#1f362d;border-radius:50%}.touch-actions{display:flex;flex-direction:column;justify-content:center;gap:8px}.touch-action-row{display:flex;gap:8px;justify-content:flex-end}.touch-actions button{background:#d9c490;border:0;color:#2d4238;box-shadow:0 3px 0 #96845c;font-size:12px;min-height:42px;min-width:59px;touch-action:none}.touch-actions .action{background:#f3d994;min-width:95px;font-weight:700}.touch-actions .on{background:#8dad79}
+.side{padding:6px 0}.side-label{font-family:monospace;font-size:10px;letter-spacing:.18em;color:#87907e}.side h2{font-size:19px;letter-spacing:-.6px;margin:7px 0 8px}.side-intro{font-size:12px;line-height:1.8;color:#68766b;margin:0 0 16px}.story-list{display:flex;flex-direction:column;gap:7px}.story{width:100%;text-align:left;padding:11px 11px;display:flex;gap:10px;align-items:center;background:#f7f2e3a8;border-color:#d0d4be;border-radius:5px}.story.selected{background:#f9edcd;border-color:#baa672;box-shadow:inset 3px 0 #a78851}.story-icon{width:27px;height:27px;flex:0 0 27px;display:grid;place-items:center;background:#dce2c9;color:#527655;font-size:15px;border-radius:3px}.story.done .story-icon{background:#667d5d;color:#fff0bf}.story-name{font-size:12px;font-weight:700}.story-state{font-size:10px;color:#7a846e;margin-top:4px}.side-note{border-top:1px solid #cbd0b9;padding-top:13px;margin-top:16px;font-size:11px;line-height:1.85;color:#7a806e}.side-note strong{color:#516951;font-weight:500}.footer{display:flex;justify-content:space-between;gap:10px;color:#778370;font-size:10px;padding-top:20px;line-height:1.8}.footer kbd{background:#f5eedc;border:1px solid #d3d7c3;padding:1px 4px;border-radius:3px;font-family:inherit}.save-state{white-space:nowrap}
+.screen{position:fixed;inset:0;z-index:30;background:#102e258c;display:flex;align-items:center;justify-content:center;padding:22px;backdrop-filter:blur(3px)}.panel{max-height:92dvh;overflow:auto;width:min(100%,580px);background:var(--paper);border:1px solid #c6cbb3;border-radius:12px;box-shadow:0 15px 70px #071e2850;padding:28px;position:relative}.panel.wide{width:min(100%,760px)}.panel h2{font-size:25px;line-height:1.5;margin:5px 0 15px;letter-spacing:-.9px}.panel p{font-size:14px;line-height:1.95;color:#52664f;word-break:keep-all;margin:12px 0}.panel small{font-size:11px;line-height:1.8;color:#7f8774}.panel-label{font-size:10px;letter-spacing:.13em;color:#858d70;font-family:monospace}.panel-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}.panel-actions button{flex:1;min-width:130px}.intro-pixel{height:78px;margin-bottom:23px;border-bottom:2px solid #c6cbae;position:relative;background:linear-gradient(180deg,#e5e5ce,#eddcac);overflow:hidden}.intro-pixel:before{content:"";position:absolute;width:13px;height:34px;left:48%;bottom:12px;background:#567660;box-shadow:0 12px 0 #36534c,-4px 7px 0 #567660,4px 7px 0 #567660}.intro-pixel:after{content:"";position:absolute;left:calc(48% - 3px);bottom:46px;width:19px;height:14px;background:#f7cc74;border:3px solid #536f56;box-shadow:0 0 24px 9px #f7d88888}.intro-cloud{position:absolute;width:56px;height:6px;background:#f6f0d4;top:19px;left:16%;box-shadow:170px -8px 0 #f6f0d4,240px 16px 0 #f6f0d4}.intro-houses{position:absolute;width:43px;height:20px;bottom:0;background:#8b9d7d;left:18%;box-shadow:70px 5px 0 #8b9d7d,237px 0 0 #8b9d7d,282px 4px 0 #8b9d7d}
+.dialogue-screen{align-items:flex-end;padding-bottom:max(34px,env(safe-area-inset-bottom))}.dialogue{width:min(100%,700px);padding:23px 26px;border-radius:10px}.speaker{display:flex;align-items:center;gap:12px;margin-bottom:10px}.portrait{width:34px;height:38px;display:grid;place-items:center;flex-shrink:0;background:#dfddbc;border:1px solid #babd9d;font-size:20px;image-rendering:pixelated}.speaker-name{font-size:15px;font-weight:bold}.speaker-role{font-size:10px;color:#839076;margin-top:3px}.dialogue .line{font-size:16px;color:#2f4a3a;line-height:1.9;white-space:pre-line;margin:12px 0 8px;min-height:62px;word-break:keep-all}.dialogue .panel-actions{justify-content:flex-end;margin-top:16px}.dialogue .panel-actions button{flex:0 1 auto;min-width:130px}.choice-btn{text-align:left;width:100%;flex:1 0 90%!important}.dialog-progress{font-size:10px;color:#8b917d;margin-right:auto;align-self:center}.close-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.close-row h2{margin:0}.map-wrap{position:relative;margin-top:15px;background:#a8ba82;border:4px solid #445e49;border-radius:5px;line-height:0}.map-wrap canvas{width:100%;image-rendering:pixelated}.map-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}.map-legend button{flex:1;min-width:135px;text-align:left;font-size:12px}.map-legend button.done{color:#7a8a73}.map-legend button.selected{border-color:#a2814d;background:#f6e7bf}.help-grid{display:grid;grid-template-columns:auto 1fr;gap:10px 17px;font-size:13px;line-height:1.7;margin:20px 0}.help-grid b{color:#a47b43}.notebook-entry{padding:14px 0;border-bottom:1px solid #d3d6c1}.notebook-entry h3{font-size:14px;margin:0 0 7px}.notebook-entry p{font-size:13px;margin:0}.inventory{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.inventory span{font-size:12px;padding:6px 9px;background:#e3e6d1;border-radius:4px}.option{display:flex;gap:12px;align-items:center;margin:16px 0;font-size:13px}.option input{accent-color:#5a7655}.danger{color:#9a573c;border-color:#d7ba9d}.key-hint{font-family:monospace;color:#7e8c76;font-size:10px;line-height:1.7}
+.circuit-shell{background:#355448;padding:17px 13px;border:3px solid #284638;border-radius:7px;margin:18px auto;max-width:340px;display:grid;grid-template-columns:20px 1fr 20px;align-items:center;gap:7px}.circuit{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.tile{padding:0;aspect-ratio:1;border:1px solid #839879;border-radius:4px;background:#536e5d;display:grid;place-items:center}.tile:hover{background:#657f69}.tile.live{background:#71815c;border-color:#f6d487}.tile svg{width:100%;height:100%;display:block}.terminal{width:19px;height:20px;font-size:15px;color:#d3d8b4;text-align:center}.terminal.live{color:#ffdc8b}.circuit-status{font-size:12px;text-align:center;color:#897247;min-height:22px}.end-card{text-align:center}.end-card .intro-pixel{margin-top:5px}.end-card h2{font-size:29px}.ending-quote{border-top:1px solid #ccd0b8;border-bottom:1px solid #ccd0b8;padding:20px 10px;font-size:18px!important;color:#355740!important;line-height:2!important}.end-tags{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin:16px 0}.end-tags span{font-size:11px;padding:6px 9px;border:1px solid #c4cbb0;color:#667b59;border-radius:3px}.file-input{display:none}
+@media(pointer:coarse){.touchpad{display:flex}.footer .keyboard-hints{display:none}}
+@media(max-width:900px){.page{padding:20px 18px}.layout{grid-template-columns:minmax(0,1fr) 210px;gap:16px}.mast-note{display:none}.side-intro{font-size:11px}.story{padding:9px 8px}.brand{font-size:8px}.console{padding:9px}}
+@media(max-width:700px){.page{padding:15px 10px 20px}.mast{margin-bottom:14px;padding:0 5px}.mast h1{font-size:24px}.eyebrow{font-size:8px}.mast p{font-size:11px;margin-top:7px}.layout{display:block}.console{max-width:580px;margin:auto}.side{padding:22px 6px 0}.side-intro{margin-bottom:12px}.story-list{display:grid;grid-template-columns:1fr 1fr;gap:7px}.story-name{font-size:11px}.story-state{font-size:9px}.side-note{margin-top:12px;font-size:11px}.hud{inset:7px 7px auto}.hud-pill{font-size:10px;padding:6px 7px}.hud-mini{font-size:8px}.objective{bottom:7px;left:7px}.objective-text{font-size:10px;padding:6px 8px;max-width:94%}.context{font-size:10px;bottom:49px;padding:5px 8px}.toast{font-size:11px;top:44px;padding:7px 10px}.console-bottom .brand{display:none}.toolbar{width:100%}.toolbar button{flex:1;padding:7px 6px;font-size:10px}.touchpad{display:flex}.footer{font-size:9px;flex-wrap:wrap;padding:17px 5px 0}.footer .keyboard-hints{display:none}.screen{padding:13px}.panel{padding:22px;max-height:91dvh}.panel h2{font-size:23px}.panel p{font-size:13px}.dialogue-screen{padding:10px 10px max(14px,env(safe-area-inset-bottom))}.dialogue{padding:18px}.dialogue .line{font-size:15px;min-height:56px}.dialogue .panel-actions button{font-size:13px;padding:10px 12px}.panel-actions{margin-top:17px}.panel-actions button{min-width:110px}.trust{font-size:10px;bottom:78px}.map-legend button{min-width:125px;font-size:11px}.circuit-shell{max-width:300px}.end-card h2{font-size:25px}.ending-quote{font-size:16px!important}}
+@media(max-height:520px) and (orientation:landscape){.page{padding:8px}.mast,.side,.footer{display:none}.layout{display:block}.console{max-width:610px;display:grid;grid-template-columns:1fr 130px;padding:7px;gap:7px}.console-top,.console-bottom{display:none}.viewport{width:auto;max-height:94dvh}.touchpad{display:flex;padding:5px;flex-direction:column;justify-content:space-around}.touch-actions .action{min-width:70px}.touch-actions button{min-width:45px;font-size:10px}.dialogue-screen{align-items:center}.dialogue .line{min-height:0}.panel{max-height:94dvh;padding:16px}.intro-pixel{display:none}.panel h2{font-size:21px}.panel p{font-size:12px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="page">
+ <header class="mast"><div><div class="eyebrow">LITTLE LIGHTS, ON THE WAY HOME</div><h1>돌아오는 불빛</h1><p>작은 저녁 어드벤처 · 오늘, 이 동네의 누군가가 되어 주세요.</p></div><div class="mast-note"><div class="sun"></div>서두르지 않아도 되는 동네<br>이어지는 이야기 여섯 편</div></header>
+ <div class="layout">
+ <section class="console" aria-label="게임 화면">
+  <div class="console-top"><span>ORDINARY EVENING / COLOR</span><span class="power">ON</span></div>
+  <div class="viewport">
+   <canvas id="world" class="world" width="320" height="240" tabindex="0" aria-label="방향키 또는 WASD로 이동하는 동네. F로 대화, E로 차량 탑승. 지도는 M."></canvas>
+   <div class="hud"><div class="hud-pill"><span id="location">느티나무 광장</span><span class="hud-mini" id="clock">해가 조금 기울었어요</span></div><div class="hud-pill hud-right"><span id="mode">걸어서, 천천히</span><span class="hud-mini" id="carry">빈 가방 · 가벼운 발걸음</span></div></div>
+   <div id="context" class="context hidden"></div>
+   <div class="objective"><div class="objective-text" id="objective">동네 사람에게 말을 걸어 보세요.</div></div>
+   <div id="trust" class="trust hidden">가만히, 같은 높이에서<div class="trust-track"><div id="trustFill" class="trust-fill"></div></div></div>
+   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+  <div class="console-bottom"><nav class="toolbar" aria-label="게임 도구"><button id="mapBtn">지도 M</button><button id="journalBtn">수첩 J</button><button id="soundBtn" aria-pressed="false">소리 꺼짐 ♪</button><button id="menuBtn">메뉴 / 도움말</button></nav><span class="brand">A PLACE FOR YOU TOO</span></div>
+  <div class="touchpad" aria-label="터치 조작">
+   <div class="dpad"><button class="up" data-key="w" aria-label="위 / 가속">▲</button><button class="left" data-key="a" aria-label="왼쪽 / 좌회전">◀</button><span class="center"></span><button class="right" data-key="d" aria-label="오른쪽 / 우회전">▶</button><button class="downkey" data-key="s" aria-label="아래 / 후진">▼</button></div>
+   <div class="touch-actions"><div class="touch-action-row"><button id="quietBtn" aria-pressed="false">살금살금</button><button id="carBtn">타기 E</button></div><div class="touch-action-row"><button id="touchMap">지도</button><button id="actionBtn" class="action">말 걸기 F</button></div></div>
+  </div>
+ </section>
+ <aside class="side"><div class="side-label">YOUR POCKET NOTEBOOK</div><h2>오늘의 작은 약속</h2><p class="side-intro">마음이 가는 이야기를 고르면<br>화살표가 길을 알려 줍니다.</p><div id="stories" class="story-list"></div><div id="sideNote" class="side-note"><strong>불빛이 켜지는 저녁에, 광장에서 만나요.</strong><br>네 가지 이야기가 이어지면 저녁 모임이 열려요.<br>남은 일은 나중에 해도 괜찮아요.</div></aside>
+ </div>
+ <footer class="footer"><span class="keyboard-hints"><kbd>WASD / 방향키</kbd> 이동 &nbsp; <kbd>F / Space</kbd> 대화 &nbsp; <kbd>E</kbd> 타기·내리기 &nbsp; <kbd>Shift</kbd> 살금살금 &nbsp; <kbd>Space</kbd> 차량 브레이크</span><span id="saveState" class="save-state">이 동네는 인터넷 없이도 열립니다.</span></footer>
+</main>
+<div id="overlay" class="screen hidden" role="dialog" aria-modal="true" aria-label="게임 대화"></div>
+<input id="importInput" type="file" accept="application/json,.json" class="file-input" aria-label="저장한 수첩 가져오기">
+<script>
+'use strict';
+/* 돌아오는 불빛 v1.0 — 외부 자원 없는 한 파일 게임.
+   원본의 캔버스 카메라 / 보행 / 차량 구조를 확장했습니다.
+   시간 제한·돈·도덕 점수 대신 각자의 사연, 작은 실천, 돌아오는 돌봄이 있습니다. */
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const W=960,H=720,VW=320,VH=240,TAU=Math.PI*2,SAVEKEY='returning-lights-v1';
+const canvas=$('#world'),ctx=canvas.getContext('2d',{alpha:false});ctx.imageSmoothingEnabled=false;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const rnd=(a,b)=>a+Math.random()*(b-a), copy=x=>JSON.parse(JSON.stringify(x));
+const C={grass:'#9cb77c',grass2:'#adc28a',deep:'#294e42',road:'#728d7a',roadLine:'#b7c1a0',path:'#d7cca0',water:'#6f9f95',waterLight:'#a3c9b0',skin:'#efcda0',ink:'#2c493d',gold:'#f5cf7e',roof:'#738b67'};
+const quests=[
+ {id:'fruit',icon:'◉',name:'데굴데굴, 귤 다섯 개',who:'소라',color:'#d2995f',note:'소라 씨는 귤 하나를 내 가방에 넣어 주었다. “이건 품삯 말고, 같이 먹는 거야.”'},
+ {id:'cat',icon:'ฅ',name:'작은 발걸음의 속도',who:'윤',color:'#968ca0',note:'밤이는 재촉하지 않는 발걸음을 따라왔다. 윤 씨는 내일 내가 쉬는 동안 밤이를 돌봐 주겠다고 했다.'},
+ {id:'letter',icon:'✉',name:'부치지 못한 안부',who:'도현',color:'#879599',note:'봉투 속 말은 도현 씨의 것으로 남겨 두었다. 대신, 오늘의 안부를 함께 부쳤다.'},
+ {id:'repair',icon:'⌁',name:'불빛을 잇는 두 사람',who:'민',color:'#7395a5',note:'민은 말이 적지만 손끝은 다정했다. 내가 모르는 연결을 알려 주었고, 우리는 같이 불을 켰다.'},
+ {id:'meal',icon:'▤',name:'아직 따뜻한 저녁',who:'연우',color:'#b68162',note:'빈 도시락 가방을 돌려주자 연우 씨가 내 몫을 꺼냈다. 배달하는 사람도 저녁을 먹어야 하니까.'},
+ {id:'garden',icon:'✿',name:'내일 피어도 되는 꽃',who:'하람',color:'#bc9a56',note:'하람이 물었다. “내일도 와 볼래?” 오늘 다 피지 않은 꽃 덕분에, 내일 올 이유가 하나 생겼다.'}
+];
+const buildings=[
+ {x:94,y:66,w:116,h:94,roof:'#b87e63',sign:'소라 상점',type:'shop'},
+ {x:340,y:70,w:148,h:97,roof:'#bd9566',sign:'저녁 부엌',type:'bakery'},
+ {x:71,y:283,w:135,h:105,roof:'#7588a0',sign:'느린 책방',type:'books'},
+ {x:349,y:521,w:155,h:98,roof:'#8e9679',sign:'마을 우체국',type:'post'},
+ {x:667,y:529,w:122,h:90,roof:'#9b8391',sign:'작은 작업실',type:'studio'},
+ {x:63,y:536,w:117,h:88,roof:'#9d8e65',sign:'햇살 주택',type:'house'},
+ {x:642,y:68,w:150,h:83,roof:'#7a8f72',sign:'열린 쉼터',type:'house'}
+];
+const roads=[{x:237,y:20,w:50,h:680},{x:559,y:20,w:50,h:680},{x:22,y:189,w:798,h:46},{x:22,y:444,w:798,h:48},{x:22,y:638,w:798,h:42}];
+const npcBase=[
+ {id:'host',name:'해진',role:'광장의 이웃',x:433,y:355,color:'#718e7e',hair:'#57675e'},
+ {id:'fruit',name:'소라',role:'귤 향이 나는 상점 주인',x:177,y:175,color:'#d2a166',hair:'#5c534a'},
+ {id:'cat',name:'윤',role:'느린 책방지기',x:152,y:407,color:'#93849d',hair:'#594b50'},
+ {id:'letter',name:'도현',role:'강가에서 만난 이웃',x:785,y:369,color:'#849ca0',hair:'#c5c2aa'},
+ {id:'repair',name:'민',role:'혼자 조명을 만지던 소년',x:731,y:298,color:'#7f9fb5',hair:'#3e5150'},
+ {id:'meal',name:'연우',role:'저녁 부엌의 요리사',x:424,y:181,color:'#b7876b',hair:'#665047'},
+ {id:'garden',name:'하람',role:'작은 정원의 친구',x:747,y:511,color:'#d5b465',hair:'#5e6150'},
+ {id:'post',name:'주연',role:'저녁에도 일하는 집배원',x:448,y:630,color:'#789288',hair:'#5a5350'},
+ {id:'studio',name:'수현',role:'작업실의 목수',x:715,y:631,color:'#a08c70',hair:'#615747'}
+];
+const orangeSpots=[{x:196,y:175},{x:213,y:185},{x:205,y:211},{x:158,y:212},{x:138,y:177}];
+const rubbishSpots=[{x:796,y:520},{x:805,y:560},{x:797,y:593},{x:811,y:612},{x:791,y:655}];
+const pots=[{x:810,y:542},{x:810,y:580},{x:810,y:624}];
+const envelope={x:808,y:275};
+const benches=[{x:390,y:298},{x:373,y:371},{x:491,y:369},{x:773,y:353},{x:675,y:378}];
+const lamps=[{x:319,y:252},{x:534,y:252},{x:319,y:417},{x:534,y:417},{x:218,y:175},{x:506,y:176},{x:212,y:421},{x:779,y:418},{x:315,y:622},{x:797,y:623},{x:663,y:254}];
+const colliders=[...buildings.map(b=>({x:b.x,y:b.y,w:b.w,h:b.h})),{x:405,y:278,w:29,h:26}];
+function fresh(){return {version:1,player:{x:410,y:374,dir:2},car:{x:338,y:214,angle:0,speed:0},inCar:false,selected:'fruit',quests:Object.fromEntries(quests.map(q=>[q.id,0])),oranges:[],rubbish:[],watered:[],deliveries:[],letter:false,catTrust:0,catFollowing:false,cat:{x:750,y:48},ended:false,invited:false,notes:[],choice:{},elapsed:0,steps:0,quiet:false,sound:false,reduced:matchMedia('(prefers-reduced-motion:reduce)').matches,puzzle:[2,0,2,0,1,1,0,3,2],restCount:0};}
+let S=fresh(),hasSave=false,storageAvailable=true;
+function validate(data){
+ if(!data||data.version!==1||!data.quests||!data.player)throw Error('이 게임의 수첩 파일이 아니에요.');
+ const n=fresh(),finite=(v,d)=>Number.isFinite(v)?v:d;
+ n.player={x:clamp(finite(data.player.x,410),20,812),y:clamp(finite(data.player.y,374),20,700),dir:clamp(Math.round(finite(data.player.dir,2)),0,3)};
+ for(const k of ['car','cat'])if(data[k]&&typeof data[k]==='object')n[k]={...n[k],x:clamp(finite(data[k].x,n[k].x),20,814),y:clamp(finite(data[k].y,n[k].y),20,700)};
+ n.car.angle=finite(data.car?.angle,0);n.car.speed=0;
+ for(const q of quests)n.quests[q.id]=clamp(Math.floor(finite(data.quests[q.id],0)),0,2);
+ for(const [k,max]of [['oranges',5],['rubbish',5],['watered',3]])n[k]=Array.isArray(data[k])?[...new Set(data[k].filter(v=>Number.isInteger(v)&&v>=0&&v<max))]:[];
+ n.deliveries=Array.isArray(data.deliveries)?[...new Set(data.deliveries.filter(v=>['cat','post','studio'].includes(v)))]:[];
+ for(const k of ['inCar','letter','catFollowing','ended','invited','quiet','sound','reduced'])n[k]=data[k]===true;
+ if(n.quests.cat===2)n.catFollowing=true;
+ n.catTrust=clamp(finite(data.catTrust,0),0,100);n.elapsed=Math.max(0,finite(data.elapsed,0));n.steps=Math.max(0,finite(data.steps,0));n.restCount=clamp(finite(data.restCount,0),0,10000);
+ n.selected=quests.some(q=>q.id===data.selected)||data.selected==='host'?data.selected:'fruit';
+ if(Array.isArray(data.puzzle)&&data.puzzle.length===9&&data.puzzle.every(v=>Number.isInteger(v)&&v>=0&&v<4))n.puzzle=data.puzzle;
+ n.choice={letter:data.choice?.letter==='ask'?'ask':'quiet',repair:data.choice?.repair==='help'?'help':'together'};
+ n.notes=Array.isArray(data.notes)?data.notes.filter(v=>typeof v==='string').slice(-10).map(v=>v.slice(0,200)):[];
+ if(n.ended&&Object.values(n.quests).filter(x=>x===2).length<4)n.ended=false;
+ return n;
+}
+try{const raw=localStorage.getItem(SAVEKEY);if(raw){S=validate(JSON.parse(raw));hasSave=true;}}catch(e){storageAvailable=false;}
+let started=false,overlayType='',dialogue=null,lastFocus=null,keys={},frameTime=0,t=0,cam={x:S.player.x-VW/2,y:S.player.y-VH/2},particles=[],toastTimer=0,uiTimer=0,saveTimer=0,catPath=[],pathTimer=0,footTimer=0,screenFade=0;
+let movingSpeed=0,nearby=null,restTimer=0;const catsAmbient=[{x:119,y:422,color:'#e1dbbe'},{x:497,y:330,color:'#7b7d68'}];
+function save(){
+ if(!started)return;
+ try{localStorage.setItem(SAVEKEY,JSON.stringify(S));storageAvailable=true;hasSave=true;$('#saveState').textContent='작은 약속을 저장했어요 · 같은 브라우저에서 이어하기';}
+ catch(e){storageAvailable=false;$('#saveState').textContent='메뉴 → 수첩 내보내기로 진행을 보관할 수 있어요';}
+}
+function notify(text,duration=3.5){$('#toast').textContent=text;$('#toast').classList.add('show');toastTimer=duration;}
+function esc(str){return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function clearKeys(){keys={};$$('[data-key]').forEach(b=>b.classList.remove('down'));}
+function showPanel(html,type='menu',wide=false){
+ clearKeys();S.car.speed=0;lastFocus=document.activeElement;overlayType=type;$('#overlay').className='screen'+(type==='dialogue'?' dialogue-screen':'');$('#overlay').innerHTML='<section class="panel '+(wide?'wide ':'')+(type==='dialogue'?'dialogue':'')+'">'+html+'</section>';
+ const h=$('#overlay h2');$('#overlay').setAttribute('aria-label',h?h.textContent:type==='dialogue'?'이웃과 대화':'동네 안내');
+ setTimeout(()=>$('#overlay button')?.focus({preventScroll:true}),0);
+}
+function closePanel(){overlayType='';dialogue=null;$('#overlay').className='screen hidden';$('#overlay').innerHTML='';clearKeys();canvas.focus({preventScroll:true});save();}
+function button(label,fn,cls=''){const b=document.createElement('button');b.textContent=label;b.className=cls;b.onclick=fn;return b;}
+function talk(lines,after){dialogue={lines,index:0,after};renderDialogue();}
+function say(who,text,choices){return {who,text,choices};}
+function renderDialogue(){
+ const d=dialogue,line=d.lines[d.index],npc=npcBase.find(n=>n.id===line.who)||{name:line.who==='me'?'나':line.who==='catfriend'?'밤이':'작은 저녁',role:line.who==='me'?'오늘 이 동네의 한 사람':line.who==='catfriend'?'회색 고양이':'',color:'#718c69'};
+ showPanel('<div class="speaker"><canvas id="portraitCanvas" class="portrait" width="24" height="28" aria-hidden="true"></canvas><div><div class="speaker-name">'+npc.name+'</div><div class="speaker-role">'+npc.role+'</div></div></div><div class="line">'+esc(line.text)+'</div><div class="panel-actions" id="dialogActions"></div>','dialogue');
+ dialogue=d;
+ const pc=$('#portraitCanvas').getContext('2d');pc.imageSmoothingEnabled=false;pc.fillStyle='#deddbf';pc.fillRect(0,0,24,28);pc.save();pc.scale(2,2);if(line.who==='catfriend')drawCat(pc,6,11,'#969a87',0);else drawPerson(pc,{x:6,y:13,color:npc.color||'#759985',hair:npc.hair||'#566056'},false,0,2);pc.restore();
+ const actions=$('#dialogActions');
+ if(line.choices){line.choices.forEach(c=>actions.append(button(c.label,()=>{sound.note(523,.1,'triangle',.025);c.fn();},'choice-btn')));}
+ else{const p=document.createElement('span');p.className='dialog-progress';p.textContent=(d.index+1)+' / '+d.lines.length+' · Enter / F';actions.append(p,button(d.index===d.lines.length-1?'그렇게, 한 걸음':'다음',advanceDialogue,'primary'));}
+}
+function advanceDialogue(){if(!dialogue)return;const d=dialogue;if(d.lines[d.index].choices)return;sound.note(440,.055,'triangle',.015);d.index++;if(d.index>=d.lines.length){const done=d.after;closePanel();if(done)done();}else renderDialogue();}
+function choiceContinue(lines,fn){talk(lines,fn);}
+function doneCount(){return quests.filter(q=>S.quests[q.id]===2).length;}
+function complete(id){
+ if(S.quests[id]===2)return;S.quests[id]=2;const q=quests.find(x=>x.id===id);burst(npcBase.find(n=>n.id===id),C.gold,14);sound.chime();notify(q.name+' · 이야기가 이어졌어요',4);
+ if(doneCount()>=4&&!S.invited){S.invited=true;S.selected='host';setTimeout(()=>{if(started)notify('광장의 불빛 아래, 당신의 자리도 준비되어 있어요.',6)},1200);}
+ else if(!S.ended){const next=quests.find(q=>S.quests[q.id]===1)||quests.find(q=>S.quests[q.id]===0);if(next)S.selected=next.id;}
+ refreshUI();save();
+}
+function startQuest(id){S.quests[id]=1;S.selected=id;sound.chime(true);refreshUI();save();}
+function npc(id){return npcBase.find(n=>n.id===id);}
+function objective(){
+ const q=S.selected,st=S.quests[q];
+ if(q==='host')return {x:433,y:355,text:S.ended?'느티나무 아래에서 다시 쉬어 가기':doneCount()>=4?'광장으로 · 당신의 자리가 있어요':'광장의 해진 씨와 이야기하기'};
+ if(st===0)return {...npc(q),text:npc(q).name+'에게 말 걸기 · '+quests.find(a=>a.id===q).name};
+ if(st===2)return {...npc(q),text:npc(q).name+'에게 다시 안부 묻기'};
+ if(q==='fruit'){const i=orangeSpots.findIndex((o,i)=>!S.oranges.includes(i));return i>=0?{...orangeSpots[i],text:'바닥의 귤을 걸어서 줍기 · '+S.oranges.length+'/5'}:{...npc(q),text:'귤을 소라 씨에게 돌려드리기'};}
+ if(q==='cat')return S.catFollowing?{...npc(q),text:'밤이와 책방으로 돌아가기 · 차에 함께 타도 돼요'}:{...S.cat,text:'쉼터 뒤의 밤이 · 가까이에서 살금살금 / 가만히'};
+ if(q==='letter')return S.letter?{...npc(q),text:'도현 씨에게 봉투 건네기'}:{...envelope,text:'강가 북쪽 난간 · 바람에 날린 봉투 찾기'};
+ if(q==='repair')return {...npc(q),text:'민과 함께 조명의 전선 연결하기'};
+ if(q==='meal'){const id=['cat','post','studio'].find(id=>!S.deliveries.includes(id));return id?{...npc(id),text:'저녁 배달 '+S.deliveries.length+'/3 · '+({cat:'책방의 윤 씨',post:'우체국 주연 씨',studio:'작업실 수현 씨'}[id])}:{...npc(q),text:'빈 가방을 연우 씨에게 돌려주기'};}
+ if(q==='garden'){let i=rubbishSpots.findIndex((p,i)=>!S.rubbish.includes(i));if(i>=0)return {...rubbishSpots[i],text:'강가의 조각들 줍기 · '+S.rubbish.length+'/5'};i=pots.findIndex((p,i)=>!S.watered.includes(i));return i>=0?{...pots[i],text:'화분에 물 주기 · '+S.watered.length+'/3 · F'}:{...npc(q),text:'하람과 작은 정원 바라보기'};}
+ return {x:433,y:355,text:'마음이 가는 곳으로 걸어 보세요'};
+}
+function selectQuest(id){S.selected=id;refreshUI();save();const o=objective();notify(o.text);}
+function refreshUI(){
+ $('#stories').innerHTML='';
+ for(const q of quests){const st=S.quests[q.id],b=document.createElement('button');b.className='story'+(S.selected===q.id?' selected':'')+(st===2?' done':'');b.innerHTML='<span class="story-icon">'+(st===2?'✓':q.icon)+'</span><span><div class="story-name">'+q.name+'</div><div class="story-state">'+(st===2?'이어진 이야기 · 다시 안부 묻기':st===1?'진행 중 · 길 안내 보기':q.who+'의 이야기 · 만나러 가기')+'</div></span>';b.onclick=()=>selectQuest(q.id);$('#stories').append(b);}
+ if(doneCount()>=4){$('#sideNote').innerHTML='<strong>'+(S.ended?'이 동네에는 당신의 자리도 있어요.':'광장에 저녁상이 준비되었어요.')+'</strong><br>'+(S.ended?'남은 이야기를 만나거나, 밤이와 더 걸어 보세요.':'모든 약속을 끝내지 않아도 초대받을 수 있어요.')+'<br><button class="small quiet" id="goPlaza">느티나무 광장으로 길 안내</button>';$('#goPlaza').onclick=()=>selectQuest('host');}
+ $('#soundBtn').textContent=S.sound?'소리 켜짐 ♪':'소리 꺼짐 ♪';$('#soundBtn').setAttribute('aria-pressed',String(S.sound));$('#quietBtn').classList.toggle('on',S.quiet);$('#quietBtn').setAttribute('aria-pressed',String(S.quiet));
+ updateHUD();
+}
+function updateHUD(){
+ const p=S.inCar?S.car:S.player,o=objective();let area=p.x>743?'물결 산책길':p.y>494?'마을 남쪽':p.x<220?(p.y<235?'귤 향 골목':'책방 골목'):p.x>620?'작은 쉼터':'느티나무 광장';
+ $('#location').textContent=area;$('#clock').textContent=S.ended?'불빛이 돌아오는 저녁':doneCount()>=4?'광장에서 누군가 기다려요':'해가 조금 기울었어요';$('#mode').textContent=S.inCar?'작은 배달차 · '+Math.round(Math.abs(S.car.speed)*.36)+' km/h':S.quiet||keys.shift?'고양이의 걸음으로':'걸어서, 천천히';
+ const stuff=[];if(S.quests.fruit===1&&S.oranges.length)stuff.push('귤 '+S.oranges.length);if(S.letter&&S.quests.letter===1)stuff.push('봉투');if(S.quests.meal===1&&S.deliveries.length<3)stuff.push('도시락 '+(3-S.deliveries.length));if(S.catFollowing)stuff.push(S.inCar?'밤이 동승':'밤이와 함께');
+ $('#carry').textContent=stuff.join(' · ')||'빈 가방 · 가벼운 발걸음';$('#objective').innerHTML='<b>↗</b> '+esc(o.text);$('#carBtn').textContent=S.inCar?'내리기 E':'타기 E';$('#quietBtn').textContent=S.inCar?'브레이크':'살금살금';$('#actionBtn').textContent=S.inCar?'브레이크':nearby?(nearby.kind==='npc'?'말 걸기 F':nearby.kind==='pot'?'물 주기 F':nearby.kind==='bench'?'쉬어 가기':'살펴보기 F'):'살펴보기 F';
+ if(nearby&&!S.inCar&&!overlayType){$('#context').textContent='F · '+nearby.label;$('#context').classList.remove('hidden');}else if(!S.inCar&&dist(S.player,S.car)<26&&!overlayType){$('#context').textContent='E · 작은 배달차에 타기';$('#context').classList.remove('hidden');}else $('#context').classList.add('hidden');
+}
+// 차분한 원곡: A minor / C major의 짧은 생성형 오르골. 소리는 직접 켠 뒤에만 재생됩니다.
+const sound={ac:null,master:null,next:0,beat:0,
+ init(){try{if(!this.ac){this.ac=new(window.AudioContext||window.webkitAudioContext)();this.master=this.ac.createGain();this.master.gain.value=.38;this.master.connect(this.ac.destination);}if(this.ac.state==='suspended')this.ac.resume().catch(()=>{});}catch(e){}},
+ note(hz,d=.25,type='sine',vol=.08,when=0){if(!S.sound||!this.ac||this.ac.state!=='running')return;const a=this.ac,now=a.currentTime+when,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.value=hz;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(vol,now+.018);g.gain.exponentialRampToValueAtTime(.0001,now+d);o.connect(g);g.connect(this.master);o.start(now);o.stop(now+d+.03);},
+ chime(short=false){[523.25,659.25,783.99,...(short?[]:[1046.5])].forEach((h,i)=>this.note(h,.6,'sine',.065,i*.12));},
+ tick(){if(!started||!S.sound||!this.ac||this.ac.state!=='running')return;const now=this.ac.currentTime;if(now<this.next)return;this.next=now+.53;const melody=[0,7,12,16,14,12,7,null,4,7,11,14,12,7,4,null,2,5,9,12,9,7,5,null,0,4,7,12,7,4,2,null];const i=this.beat++%32,n=melody[i];if(n!==null)this.note(220*2**(n/12),1.7,'sine',.048);if(i%8===0)this.note([130.81,110,146.83,130.81][Math.floor(i/8)],3.7,'triangle',.017);}
+};
+function toggleSound(){S.sound=!S.sound;if(S.sound){sound.init();if(sound.master)sound.master.gain.setTargetAtTime(.38,sound.ac.currentTime,.04);sound.chime(true);}else if(sound.master)sound.master.gain.setTargetAtTime(0,sound.ac.currentTime,.04);refreshUI();save();}
+function burst(p,color,n=8){if(S.reduced)return;for(let i=0;i<n;i++)particles.push({x:p.x,y:p.y-8,vx:rnd(-15,15),vy:rnd(-28,-5),life:rnd(.6,1.2),color});}
+// 충돌은 보행자의 중심, 회전된 자동차 네 모서리를 각각 기준으로 계산합니다.
+function blocked(x,y,r=4){if(x<18+r||x>819-r||y<18+r||y>702-r)return true;return colliders.some(b=>x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h);}
+function moveBody(obj,dx,dy,r=4){if(!blocked(obj.x+dx,obj.y,r))obj.x+=dx;if(!blocked(obj.x,obj.y+dy,r))obj.y+=dy;}
+function carBoxBlocked(x,y,a){
+ const ca=Math.cos(a),sa=Math.sin(a),ux={x:ca,y:sa},uy={x:-sa,y:ca};
+ for(const xx of [-12,12])for(const yy of [-7,7]){const px=x+xx*ca-yy*sa,py=y+xx*sa+yy*ca;if(px<18||px>819||py<18||py>702)return true;}
+ const boxes=[...colliders,...npcBase.map(n=>({x:n.x-5,y:n.y-5,w:10,h:10}))];
+ for(const b of boxes){let separate=false;const bx=b.x+b.w/2,by=b.y+b.h/2;for(const ax of [{x:1,y:0},{x:0,y:1},ux,uy]){const center=Math.abs((x-bx)*ax.x+(y-by)*ax.y);const r1=12*Math.abs(ux.x*ax.x+ux.y*ax.y)+7*Math.abs(uy.x*ax.x+uy.y*ax.y);const r2=b.w/2*Math.abs(ax.x)+b.h/2*Math.abs(ax.y);if(center>=r1+r2){separate=true;break;}}if(!separate)return true;}return false;
+}
+function nearestFree(p){for(let radius=0;radius<=90;radius+=7)for(let i=0;i<16;i++){const a=i/16*TAU,x=p.x+Math.cos(a)*radius,y=p.y+Math.sin(a)*radius;if(!blocked(x,y,5))return{x,y};}return{x:410,y:374};}
+function toggleCar(){
+ if(!started||overlayType)return;
+ if(!S.inCar){if(dist(S.player,S.car)>27){notify('차 가까이에서 E · 지도에 작은 차가 표시돼요.');return;}S.inCar=true;S.car.speed=0;sound.note(196,.12,'triangle',.06);if(S.catFollowing)notify('밤이도 조수석에 폴짝.');else notify('W/↑ 가속 · S/↓ 후진 · A D/← → 조향 · Space 제동');}
+ else{let exit=null;for(const angle of [Math.PI/2,-Math.PI/2,Math.PI,0]){const a=S.car.angle+angle,p={x:S.car.x+Math.cos(a)*23,y:S.car.y+Math.sin(a)*23};if(!blocked(p.x,p.y,5)){exit=p;break;}}if(!exit){notify('옆에 빈자리가 있는 곳에서 내려 주세요.');return;}S.inCar=false;S.car.speed=0;S.player.x=exit.x;S.player.y=exit.y;if(S.catFollowing){const c=nearestFree({x:exit.x+10,y:exit.y+5});S.cat.x=c.x;S.cat.y=c.y;catPath=[];}}
+ clearKeys();refreshUI();save();
+}
+function findNearby(){
+ if(S.inCar)return null;const candidates=[];
+ for(const n of npcBase)if(dist(S.player,n)<24)candidates.push({kind:'npc',id:n.id,x:n.x,y:n.y,label:n.name+'에게 말 걸기',d:dist(S.player,n)});
+ if(S.quests.letter===1&&!S.letter&&dist(S.player,envelope)<22)candidates.push({kind:'letter',...envelope,label:'접힌 봉투 줍기',d:dist(S.player,envelope)-5});
+ if(S.quests.garden===1&&S.rubbish.length===5)pots.forEach((p,i)=>{if(!S.watered.includes(i)&&dist(S.player,p)<22)candidates.push({kind:'pot',id:i,...p,label:'하람의 물뿌리개로 물 주기',d:dist(S.player,p)-5})});
+ benches.forEach((b,i)=>{if(dist(S.player,b)<17)candidates.push({kind:'bench',id:i,...b,label:'벤치에 잠깐 앉기',d:dist(S.player,b)+3})});
+ if(!S.catFollowing&&dist(S.player,S.cat)<25)candidates.push({kind:'catfriend',...S.cat,label:'밤이에게 작은 목소리로 인사',d:dist(S.player,S.cat)});
+ candidates.sort((a,b)=>a.d-b.d);return candidates[0]||null;
+}
+function interact(){
+ if(!started||overlayType)return;if(S.inCar){S.car.speed*=.25;return;}nearby=findNearby();
+ if(!nearby){if(dist(S.player,S.car)<27)notify('이 차는 이웃들이 함께 쓰는 배달차예요. E로 타세요.');else notify('사람이나 물건 가까이에서 F · 지도 M으로 길을 볼 수 있어요.',2.5);return;}
+ const n=nearby;
+ if(n.kind==='npc'){interactNPC(n.id);return;}
+ if(n.kind==='letter'){S.letter=true;burst(envelope,C.gold);sound.chime(true);talk([say('me','모서리가 조금 젖었지만, 봉투는 닫혀 있다.\n누군가의 말이 아직 안에 기다리고 있다.')],()=>{refreshUI();save()});return;}
+ if(n.kind==='pot'){S.watered.push(n.id);burst(n,C.waterLight,15);sound.note(740,.5,'sine',.07);notify('촉촉해진 흙. 꽃은 서두르지 않아요. '+S.watered.length+'/3');refreshUI();save();return;}
+ if(n.kind==='catfriend'){talk([say('catfriend',S.quests.cat===1?'…야옹.\n손을 내밀기보다, 잠깐 기다려 볼까.':'낯선 발소리에 귀가 쫑긋.\n목줄에 작은 글씨가 있다. “밤이 · 느린 책방”.')],()=>{if(!S.quests.cat)selectQuest('cat')});return;}
+ if(n.kind==='bench')rest();
+}
+function rest(){
+ S.restCount++;const lines=[
+ '바람이 잎을 뒤집는다. 아무 일도 하지 않는 동안에도, 강물은 혼자 잘 흐른다.',
+ '멀리서 그릇 부딪히는 소리가 난다. 누군가 오늘 저녁을 준비하고 있다.',
+ '다 끝낸 다음에만 쉴 수 있는 것은 아니다. 발끝의 힘을 조금 풀었다.',
+ '지나가던 이웃이 고개를 끄덕인다. 나도 고개를 끄덕였다. 오늘의 대화 하나.'
+ ];
+ talk([say('작은 저녁',lines[(S.restCount-1)%lines.length]),...(S.catFollowing?[say('catfriend','밤이가 옆자리에 몸을 동그랗게 만다.\n골골, 골골. 혼자 쉬는 것 같지는 않다.')]:[])],()=>{burst(S.player,'#e4ddb5',6);notify('조금 쉬었어요. 다시 걸어도, 더 쉬어도 괜찮아요.');});
+}
+function interactNPC(id){
+ if(S.quests.meal===1&&['cat','post','studio'].includes(id)&&!S.deliveries.includes(id)){
+ const lines={cat:'책 읽다가 또 저녁을 잊었네. 고마워요.\n빈손으로 보내기 아쉬운데… 광장에 읽을 책을 가져갈게요.',post:'아직 남은 편지가 있어서 못 나갔거든요.\n고마워요. 돌아갈 때 광장 의자 나르는 건 제가 할게요.',studio:'딱 마지막 선반을 달던 중이었어요.\n잘 먹을게요. 광장에 흔들리는 의자가 있던데, 제가 고쳐 둘게요.'};
+ talk([say(id,lines[id])],()=>{S.deliveries.push(id);sound.chime(true);burst(npc(id),C.gold);notify('도시락을 건넸어요 · '+S.deliveries.length+'/3');refreshUI();save();});return;
+ }
+ if(id==='host'){
+ if(S.ended){talk([say('host','왔어요? 자리는 그대로예요.\n오늘 못 한 이야기는 내일 이어도 되죠.'),say('host','아무것도 들고 오지 않아도 괜찮아요.\n앉아 있어 주는 사람도 필요하니까.')],rest);return;}
+ if(doneCount()>=4){talk([say('host','마침 잘 왔어요. 다들 조금씩 가져왔거든요.\n의자도, 국도, 고장 났던 작은 조명도.'),say('me','아직 다 못 했는데요.'),say('host','남은 일은 우리도 할 수 있어요.\n일을 다 해야만 여기 앉을 수 있는 건 아니에요.'),say('host','오늘은 어떻게 쉬고 싶어요?',[
+ {label:'오늘은… 나도 좀 돌봄을 받고 싶어요.',fn:()=>ending('care')},
+ {label:'말없이 같이 앉아 있고 싶어요.',fn:()=>ending('quiet')},
+ {label:'동네를 조금 더 걷고 올게요.',fn:()=>{closePanel();notify('식지 않게 덮어 둘게요. 천천히 와요.')}}
+ ])]);return;}
+ talk([say('host','오늘 저녁에 여기서 밥을 먹기로 했어요.\n큰 행사는 아니고, 그냥… 얼굴 좀 보자고요.'),say('host','길에서 마음 가는 일이 있으면 잠깐 들러 봐요.\n차는 누구나 써도 돼요. 열쇠는 꽂혀 있어요.'),say('host','우리가 모일 준비는 같이 할 테니,\n혼자 다 맡지는 말아요.')]);return;
+ }
+ if(id==='post'||id==='studio'){talk([say(id,id==='post'?'편지를 기다리는 사람이 있으니까, 오늘도 한 바퀴.\n그래도 가끔 누가 저를 찾아와 주면 반갑더라고요.':'이 의자는 버리기 아까워서 고치고 있어요.\n잘 고치면 누군가 조금 더 오래 앉겠죠.')]);return;}
+ const st=S.quests[id];
+ if(st===2){const extra={fruit:'그때 같이 주운 귤, 아직도 향이 나죠?\n다음번엔 그냥 놀러 와요. 도울 일 없어도.',cat:'밤이가 당신 발소리를 외웠나 봐요.\n함께 산책해도 좋아요. 쉴 때는 제가 돌볼게요.',letter:'답장이 올지는 모르겠어요.\n그래도 “잘 지내니”를 보낼 수 있어서 좋았어요.',repair:'다음에는 내가 먼저 말을 걸어 볼까 해요.\n…아, 오늘 금방 고칠 수 있었던 건 같이 해서예요.',meal:'당신 몫도 남겨 뒀어요.\n가방 내려놓고, 손 씻고 와요.',garden:'아직 꽃이 다 안 폈어.\n그럼 내일 볼 것도 있는 거지?'};talk([say(id,extra[id])]);return;}
+ if(id==='fruit'){
+ if(st===0){talk([say(id,'아이고, 봉투 밑이 터졌네.\n귤이 다섯 개나 도망갔어요.'),say(id,'허리가 좀 뻐근해서…\n가까이 굴러간 귤들을 같이 주워 줄 수 있을까요?')],()=>startQuest(id));return;}
+ if(S.oranges.length<5){talk([say(id,'멀리 가진 않았어요. 가게 앞이랑 길 건너편에요.\n귤 가까이 걸어가면 주울 수 있어요.')]);return;}
+ talk([say(id,'하나, 둘… 다 돌아왔네. 고마워요.'),say('me','상처 난 귤도 있는데, 괜찮아요?'),say(id,'같이 까먹으면 되죠. 이건 당신 거.\n오늘 저녁 광장에도 좀 가져갈게요.')],()=>complete(id));return;
+ }
+ if(id==='cat'){
+ if(st===0){talk([say(id,'밤이가 바람 구경을 나갔나 봐요.\n회색 고양이인데, 북동쪽 쉼터 뒤를 좋아해요.'),say(id,'겁이 많아서 달려가면 움츠러들어요.\n가까이에서 가만히 기다리거나, Shift를 누르고 천천히 걸어 주세요.'),say(id,'따라오기 시작하면 여기로 같이 와 줄래요?\n힘들면 배달차 조수석을 아주 좋아한답니다.')],()=>startQuest(id));return;}
+ if(!S.catFollowing){talk([say(id,'밤이는 쉼터 뒤 작은 풀밭에 있을 거예요.\n북동쪽으로 가다가 지도 M에서 위치를 봐 주세요.'),say(id,'가까이에서 기다리는 시간도,\n고양이에게는 인사라고 생각해요.')]);return;}
+ if(dist(S.cat,npc(id))>65&&!S.inCar){talk([say(id,'밤이가 아직 오는 중이네요.\n조금만 기다려 볼까요?')]);return;}
+ talk([say(id,'밤아, 왔구나.\n…당신 옆이 꽤 마음에 드나 봐요.'),say('catfriend','야옹.\n밤이가 내 신발에 턱을 살짝 올린다.'),say(id,'더 산책하고 싶어 하면 데려가도 돼요.\n당신이 지치는 날에는 제가 둘 다 기다릴게요.')],()=>complete(id));return;
+ }
+ if(id==='letter'){
+ if(st===0){talk([say(id,'편지를 한 장 썼는데…\n바람이 가져가 버렸어요. 강을 따라 북쪽으로요.'),say(id,'대단한 내용은 아니에요.\n그냥, 먼저 안부를 묻는 게 조금 어려웠네요.')],()=>startQuest(id));return;}
+ if(!S.letter){talk([say(id,'강가 북쪽 난간 가까이 떨어졌을 거예요.\n봉투에 작은 파란 표시가 있어요.')]);return;}
+ talk([say(id,'찾아줬군요. 젖을까 봐 걱정했어요.'),say('me','봉투를 건네면서…',[
+ {label:'“여기 있어요. 구겨진 곳만 조금 펴 뒀어요.”',fn:()=>{S.choice.letter='quiet';choiceContinue([say(id,'고마워요.\n말하고 싶어질 때, 그때 들려줘도 되겠지요?'),say('me','그럼요. 오늘은 그냥 같이 걸어도 되니까요.')],()=>complete(id));}},
+ {label:'“괜찮으시면, 누구에게 보내는지 물어도 될까요?”',fn:()=>{S.choice.letter='ask';choiceContinue([say(id,'오래 연락하지 못한 친구예요.\n하지만 오늘은 여기까지만 이야기하고 싶네요.'),say('me','네. 말해 주신 만큼만 들을게요.'),say(id,'그렇게 말해 주니 편하네요.\n저녁 모임에 따뜻한 차를 가져갈게요.')],()=>complete(id));}}
+ ])]);return;
+ }
+ if(id==='repair'){
+ if(st===0){talk([say(id,'…이거, 버리는 거 아니에요.\n제가 고쳐 보려고 가져왔어요.'),say('me','옆에 앉아도 괜찮을까?'),say(id,'네. 혼자 하니까 자꾸 헷갈려서.\n왼쪽 전원에서 오른쪽 전구까지 선이 이어지면 돼요.'),say(id,'칸을 누르면 선이 돌아가요.\n막히면 저한테 한 칸 부탁해도 돼요. 같이 하는 거니까.')],()=>{startQuest(id);openPuzzle();});return;}
+ openPuzzle();return;
+ }
+ if(id==='meal'){
+ if(st===0){talk([say(id,'저녁을 좀 넉넉히 만들었어요.\n책방, 우체국, 작업실에 하나씩 가져다줄 수 있을까요?'),say(id,'부엌 앞 작은 차를 타도 좋아요.\n받는 사람 곁에서는 내려서 F로 말을 걸어 주세요.'),say(id,'뜨거울 때 먹으면 좋지만, 급하게 달리진 말아요.\n이 가방이 꽤 오래 따뜻하게 지켜 줘요.')],()=>startQuest(id));return;}
+ if(S.deliveries.length<3){talk([say(id,'책방의 윤 씨, 우체국의 주연 씨, 작업실 수현 씨.\n지도에서 차례로 안내해 줄 거예요. 잘 부탁해요.')]);return;}
+ talk([say(id,'다녀왔어요? 가방은 여기 놓아요.\n자, 이건 당신 저녁.'),say('me','내 것도 있었어요?'),say(id,'당연하죠. 돌아올 사람의 밥을 빼놓고\n저녁을 만들지는 않아요.')],()=>complete(id));return;
+ }
+ if(id==='garden'){
+ if(st===0){talk([say(id,'여기 꽃을 심었어. 아직은 흙처럼 보이지만!\n근데 바람이 종이랑 빈 봉지를 가져왔네.'),say(id,'다섯 개만 같이 주워 줄래?\n그러고 화분 세 개에 물을 주자. 물뿌리개는 빌려줄게.'),say('me','오늘 꽃이 필까?'),say(id,'모르겠어. 안 피면 내일 보러 오면 되지.')],()=>startQuest(id));return;}
+ if(S.rubbish.length<5||S.watered.length<3){talk([say(id,S.rubbish.length<5?'강가 바닥의 작은 조각들을 걸어서 주우면 돼.\n다 주우면 화분 곁에서 F로 물을 줘!':'이제 강가 화분 세 개에 물을 주자.\n화분 곁에서 F를 누르면 돼.')]);return;}
+ talk([say(id,'물 냄새 좋다. 내일은 조금 달라져 있겠지?'),say('me','오늘은 꽃이 없어도, 여기에 있고 싶네.'),say(id,'그럼 성공이야!\n저녁에 꽃 대신 화분 하나 가져갈래.')],()=>complete(id));return;
+ }
+}
+// 3×3 전선 퍼즐: 비트는 위 / 오른쪽 / 아래 / 왼쪽입니다.
+const pipeBase=[6,12,3,3,3,10,10,9,5],pipeSolution=[0,0,0,3,0,0,0,0,0];
+function maskAt(i){let m=pipeBase[i];for(let k=0;k<S.puzzle[i];k++)m=((m<<1)&15)|(m>>3);return m;}
+function powered(){const seen=new Set(),queue=[];if(maskAt(3)&8){seen.add(3);queue.push(3);}while(queue.length){const i=queue.shift(),x=i%3,y=Math.floor(i/3);for(let d=0;d<4;d++){if(!(maskAt(i)&(1<<d)))continue;const nx=x+[0,1,0,-1][d],ny=y+[-1,0,1,0][d];if(nx<0||nx>2||ny<0||ny>2)continue;const j=ny*3+nx;if((maskAt(j)&(1<<((d+2)%4)))&&!seen.has(j)){seen.add(j);queue.push(j)}}}return seen;}
+function puzzleSolved(){return powered().has(5)&&!!(maskAt(5)&2);}
+function openPuzzle(){
+ showPanel('<div class="panel-label">민과 함께 / LITTLE REPAIR</div><h2>끊어진 곳을 이어서</h2><p>칸을 눌러 전선을 돌려 주세요.<br><b>왼쪽 전원 → 오른쪽 전구</b>가 이어지면 불이 켜집니다.</p><div class="circuit-shell"><div class="terminal live">⚡</div><div class="circuit" id="circuit"></div><div id="bulb" class="terminal">☼</div></div><div id="circuitStatus" class="circuit-status">모든 칸을 쓸 필요는 없어요.</div><div class="panel-actions"><button id="puzzleHelp">민에게 한 칸 부탁하기</button><button id="puzzleBack" class="quiet">잠깐 쉬었다 할게요</button></div><p class="key-hint">마우스·터치로 회전 / 키보드는 Tab으로 선택, Enter로 회전</p>','puzzle');
+ $('#puzzleHelp').onclick=()=>{S.choice.repair='help';const route=[3,0,1,4,5],i=route.find(i=>S.puzzle[i]!==pipeSolution[i]);if(i!==undefined){S.puzzle[i]=pipeSolution[i];sound.note(659,.2,'triangle',.04);renderPuzzle();$('#circuitStatus').textContent='민: “이 칸은 이쪽으로. 나머지도 같이 봐요.”';checkPuzzle();}save();};
+ $('#puzzleBack').onclick=closePanel;renderPuzzle();if(puzzleSolved())checkPuzzle();
+}
+function renderPuzzle(){
+ const live=powered(),root=$('#circuit');root.innerHTML='';
+ for(let i=0;i<9;i++){const mask=maskAt(i),on=live.has(i),col=on?'#f9d989':'#b9cbb2';let lines='';for(let d=0;d<4;d++)if(mask&(1<<d))lines+='<path d="M 32 32 L '+[32,64,32,0][d]+' '+[0,32,64,32][d]+'" />';const b=button('',()=>{S.puzzle[i]=(S.puzzle[i]+1)%4;sound.note(330+S.puzzle[i]*55,.08,'triangle',.045);renderPuzzle();$('#circuit button:nth-child('+(i+1)+')')?.focus({preventScroll:true});checkPuzzle();save()},'tile'+(on?' live':''));b.setAttribute('aria-label',(Math.floor(i/3)+1)+'행 '+(i%3+1)+'열 전선 회전');b.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="'+col+'" stroke-width="8" fill="none">'+lines+'</g><rect x="26" y="26" width="12" height="12" fill="'+col+'"/><rect x="29" y="29" width="6" height="6" fill="#4c6955"/></svg>';root.append(b);}
+ $('#bulb').classList.toggle('live',puzzleSolved());
+}
+function checkPuzzle(){if(!puzzleSolved())return;$('#circuitStatus').textContent='불이 켜졌어요. 혼자가 아니라, 함께.';$$('#circuit button').forEach(b=>b.disabled=true);$('#puzzleHelp').disabled=true;$('#puzzleBack').textContent='민과 이야기하기';$('#puzzleBack').className='primary';$('#puzzleBack').onclick=()=>{talk([say('repair','켜졌다. …진짜로 켜졌네.'),say('me','민이 없었으면 나도 어려웠을 거야.'),say('repair','그 말, 처음 들어 봐요.\n저녁에 이 조명 가져갈게요. 조금 늦어도, 제 자리 있겠죠?'),say('me','같이 앉자.')],()=>complete('repair'));};sound.chime();}
+function ending(kind){
+ const lines=kind==='care'?[say('host','그럼 오늘은 우리가 챙길 차례네요.\n가방은 여기 내려놓아요.'),say('meal','식기 전에 먹어요. 당신 몫이에요.')]:[say('host','좋아요. 말을 많이 안 해도 같이 있을 수 있죠.'),say('작은 저녁','누군가 내 앞에 따뜻한 그릇을 놓는다.\n이름을 부르지 않아도, 내 자리라는 걸 알 수 있다.')];
+ lines.push(say('repair',S.quests.repair===2?'조명은 제가 켤게요.\n아까 같이 고친 거, 생각보다 환하네요.':'남은 조명은 제가 고쳤어요.\n당신도 앉아요. 저도 이제 앉으려고요.'),say('작은 저녁','거창한 약속은 없었다.\n누군가 내일도 문을 열고, 누군가는 그 문으로 들어올 것이다.'),say('작은 저녁','집으로 돌아가는 길에 불빛이 하나 더 켜졌다.\n내가 켠 불빛은 아니었다.'));
+ talk(lines,()=>{S.ended=true;S.inCar=false;S.car.speed=0;S.player={x:438,y:357,dir:2};if(S.catFollowing){S.cat.x=448;S.cat.y=362;}S.selected='host';screenFade=S.reduced?0:1;refreshUI();save();sound.chime();showEnding();});
+}
+function showEnding(){
+ showPanel('<div class="end-card"><div class="panel-label">돌아오는 불빛 / 첫 번째 저녁</div><div class="intro-pixel"><i class="intro-cloud"></i><i class="intro-houses"></i></div><h2>당신의 자리도 있었어요.</h2><p>오늘 조금 덜 외로워진 동네.<br>그 안에는 당신도 있습니다.</p><p class="ending-quote">세상을 다 고치지는 못했지만,<br>같이 저녁을 먹을 수는 있었다.</p><div class="end-tags">'+quests.filter(q=>S.quests[q.id]===2).map(q=>'<span>'+q.who+'와 이어진 이야기</span>').join('')+'</div><p>남은 이야기를 만나도, 고양이와 걸어도,<br>오늘은 여기서 쉬어도 괜찮아요.</p><div class="panel-actions"><button id="afterEnding" class="primary">불빛 켜진 동네로 돌아가기</button><button id="endNotebook">오늘의 수첩 읽기</button></div><p><small>이 동네에 잠시 머물러 주어서 고마워요.</small></p></div>','ending');
+ $('#afterEnding').onclick=closePanel;$('#endNotebook').onclick=openJournal;
+}
+// 고양이는 충돌 격자에서 경로를 찾습니다. 길이 막혀도 지름길로 벽을 뚫지 않습니다.
+function catFindPath(from,to){
+ const cell=12,nx=80,ny=60,start={x:clamp(Math.floor(from.x/cell),1,67),y:clamp(Math.floor(from.y/cell),1,58)},goal={x:clamp(Math.floor(to.x/cell),1,67),y:clamp(Math.floor(to.y/cell),1,58)},key=(x,y)=>y*nx+x,si=key(start.x,start.y),gi=key(goal.x,goal.y),queue=[si],prev=new Int32Array(nx*ny).fill(-1);prev[si]=si;let found=-1;
+ for(let h=0;h<queue.length;h++){const cur=queue[h],x=cur%nx,y=Math.floor(cur/nx);if(cur===gi||Math.hypot(x-goal.x,y-goal.y)<1.6){found=cur;break;}for(const [dx,dy]of [[1,0],[-1,0],[0,1],[0,-1]]){const xx=x+dx,yy=y+dy,j=key(xx,yy);if(xx<1||xx>=68||yy<1||yy>=59||prev[j]!==-1||blocked(xx*cell+cell/2,yy*cell+cell/2,3))continue;prev[j]=cur;queue.push(j);}}
+ if(found<0)return [];const path=[];for(let j=found;j!==si;j=prev[j])path.push({x:j%nx*cell+cell/2,y:Math.floor(j/nx)*cell+cell/2});return path.reverse();
+}
+function update(dt){
+ t+=dt;if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)$('#toast').classList.remove('show');}
+ if(!started||overlayType){sound.tick();return;}
+ S.elapsed+=dt;const before={x:S.player.x,y:S.player.y};
+ if(!S.inCar){let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0),n=Math.hypot(dx,dy);const speed=S.quiet||keys.shift?24:57;
+ if(n){dx=dx/n*speed*dt;dy=dy/n*speed*dt;moveBody(S.player,dx,dy,4);S.player.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?3:1):(dy<0?0:2);S.steps+=Math.hypot(dx,dy);}
+ movingSpeed=Math.hypot(S.player.x-before.x,S.player.y-before.y)/dt;
+ footTimer+=dt;if(n&&footTimer>.34){footTimer=0;if(!S.reduced)particles.push({x:S.player.x,y:S.player.y,vx:0,vy:0,life:.25,color:'#b6bd8e'});}
+ }else{
+ const car=S.car,acc=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0),turn=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),onRoad=roads.some(r=>car.x>r.x&&car.x<r.x+r.w&&car.y>r.y&&car.y<r.y+r.h);
+ if(acc)car.speed+=acc*65*dt;else car.speed*=Math.exp(-1.8*dt);
+ if(keys[' ']||keys.brake)car.speed*=Math.exp(-10*dt);car.speed=clamp(car.speed,-40,onRoad?104:49);if(Math.abs(car.speed)<.2)car.speed=0;
+ const oldAngle=car.angle,a=car.angle+turn*2.1*dt*clamp(Math.abs(car.speed)/28,0,1)*(car.speed<0?-1:1);if(!carBoxBlocked(car.x,car.y,a))car.angle=a;
+ const nx=car.x+Math.cos(car.angle)*car.speed*dt,ny=car.y+Math.sin(car.angle)*car.speed*dt;
+ if(!carBoxBlocked(nx,ny,car.angle)){car.x=nx;car.y=ny;}else{if(Math.abs(car.speed)>22){burst(car,'#cacbaf',5);if(restTimer<=0){notify('천천히 돌아가요. 다친 사람은 없어요.',2);restTimer=3;}}car.speed=-car.speed*.12;car.angle=oldAngle;}
+ S.player.x=car.x;S.player.y=car.y;movingSpeed=Math.abs(car.speed);
+ }
+ restTimer=Math.max(0,restTimer-dt);
+ if(!S.inCar){
+ if(S.quests.fruit===1)orangeSpots.forEach((p,i)=>{if(!S.oranges.includes(i)&&dist(S.player,p)<11){S.oranges.push(i);burst(p,'#efbe78',5);sound.note(440+S.oranges.length*70,.18,'sine',.055);notify('귤을 주웠어요 · '+S.oranges.length+'/5',2);refreshUI();save();}});
+ if(S.quests.garden===1)rubbishSpots.forEach((p,i)=>{if(!S.rubbish.includes(i)&&dist(S.player,p)<11){S.rubbish.push(i);burst(p,'#e0dcae',5);sound.note(520,.1,'triangle',.03);notify(S.rubbish.length===5?'깨끗해진 강가. 이제 화분에 F로 물을 주세요.':'작은 조각을 주웠어요 · '+S.rubbish.length+'/5',2.5);refreshUI();save();}});
+ }
+ let trustActive=S.quests.cat===1&&!S.catFollowing&&!S.inCar&&dist(S.player,S.cat)<40;
+ $('#trust').classList.toggle('hidden',!trustActive);
+ if(trustActive){if(movingSpeed<29){S.catTrust+=dt*17;}else S.catTrust=Math.max(0,S.catTrust-dt*10);$('#trustFill').style.width=clamp(S.catTrust,0,100)+'%';if(S.catTrust>=100){S.catTrust=100;S.catFollowing=true;burst(S.cat,C.gold,15);sound.chime();notify('밤이가 먼저 다가왔어요. 이제 책방까지 같이 걸어요.',5);refreshUI();save();}}
+ if(S.catFollowing&&!S.inCar){const d=dist(S.cat,S.player);pathTimer-=dt;if(d>17){if(pathTimer<=0){catPath=catFindPath(S.cat,S.player);pathTimer=.55;}const goal=catPath[0];if(goal){const gd=dist(S.cat,goal),step=Math.min(gd,(d>95?83:65)*dt);if(gd>0)moveBody(S.cat,(goal.x-S.cat.x)/gd*step,(goal.y-S.cat.y)/gd*step,2);if(gd<4)catPath.shift();}}
+ }else if(S.inCar&&S.catFollowing){S.cat.x=S.car.x;S.cat.y=S.car.y;}
+ nearby=findNearby();
+ const focus=S.inCar?S.car:S.player,targetX=clamp(focus.x-VW/2,0,W-VW),targetY=clamp(focus.y-VH/2,0,H-VH);cam.x+=(targetX-cam.x)*(S.reduced?1:1-Math.exp(-8*dt));cam.y+=(targetY-cam.y)*(S.reduced?1:1-Math.exp(-8*dt));
+ particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=15*dt;p.life-=dt});particles=particles.filter(p=>p.life>0);screenFade=Math.max(0,screenFade-dt*.65);
+ uiTimer+=dt;if(uiTimer>.13){uiTimer=0;updateHUD();}saveTimer+=dt;if(saveTimer>8){saveTimer=0;save();}sound.tick();
+}
+// 모든 그림은 이 파일 안에서 그리는 픽셀 아트입니다.
+const mapCanvas=document.createElement('canvas');mapCanvas.width=W;mapCanvas.height=H;const mc=mapCanvas.getContext('2d');
+let seed=18527;function sr(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
+function rect(g,c,x,y,w,h){g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h);}
+function tree(g,x,y,s=1){g.save();g.translate(x,y);g.scale(s,s);rect(g,'#7c9868',-10,-1,25,7);rect(g,'#697657',-2,-9,4,15);rect(g,'#456e52',-13,-23,26,18);rect(g,'#456e52',-8,-29,16,29);rect(g,'#688b5f',-11,-26,19,17);rect(g,'#82a06e',-7,-25,10,6);rect(g,'#385e48',7,-18,6,12);rect(g,'#94ac77',-7,-24,4,3);g.restore();}
+function bush(g,x,y){rect(g,'#799562',x,y,16,7);rect(g,'#6e915b',x+2,y-3,12,8);rect(g,'#9ab477',x+3,y-3,5,3);}
+function drawBuilding(g,b){
+ rect(g,'#789367',b.x+5,b.y+6,b.w,b.h);rect(g,'#d9cfa1',b.x,b.y,b.w,b.h);rect(g,'#b5b18b',b.x+b.w-7,b.y,7,b.h);rect(g,'#919477',b.x,b.y+b.h-4,b.w,4);
+ rect(g,'#4b6550',b.x-3,b.y-4,b.w+6,b.h-32);rect(g,b.roof,b.x-3,b.y-7,b.w+6,b.h-34);rect(g,'#ffffff17',b.x-1,b.y-6,b.w+2,3);
+ for(let y=b.y+2;y<b.y+b.h-43;y+=8){rect(g,'#253b351c',b.x,y,b.w,1);for(let x=b.x+((y%16)?8:1);x<b.x+b.w;x+=17)rect(g,'#f3e6ba18',x,y,1,7);}
+ rect(g,'#e6d7a5',b.x+9,b.y+8,15,10);rect(g,'#8e9474',b.x+11,b.y+10,11,6);
+ const doorX=b.x+Math.floor(b.w/2)-7;rect(g,'#516c58',doorX,b.y+b.h-23,14,19);rect(g,'#7f9780',doorX+2,b.y+b.h-21,10,13);rect(g,'#e0cc8a',doorX+10,b.y+b.h-13,1,2);rect(g,'#e2d5ae',doorX-3,b.y+b.h-3,20,4);
+ for(const x of [b.x+13,b.x+b.w-29]){rect(g,'#61775b',x,b.y+b.h-25,17,15);rect(g,'#b0c4a0',x+2,b.y+b.h-23,13,11);rect(g,'#697e60',x+8,b.y+b.h-23,1,11);rect(g,'#e3d4a7',x-2,b.y+b.h-10,21,3);}
+ if(b.type==='shop'||b.type==='bakery'){for(let i=0;i<Math.floor(b.w/10);i++)rect(g,i%2?'#e4c997':'#8ca17b',b.x+i*10,b.y+b.h-33,10,7);rect(g,'#69765a',b.x+2,b.y+b.h-26,2,20);rect(g,'#69765a',b.x+b.w-4,b.y+b.h-26,2,20);}
+ g.font='7px sans-serif';g.textAlign='center';g.fillStyle='#304c3f';g.fillText(b.sign,b.x+b.w/2,b.y+b.h-37);g.textAlign='left';
+}
+function buildMap(){
+ mc.fillStyle=C.grass;mc.fillRect(0,0,W,H);seed=18527;
+ for(let i=0;i<5500;i++){let x=Math.floor(sr()*W),y=Math.floor(sr()*H);rect(mc,sr()>.5?'#b0c48a':'#89a86e',x,y,sr()>.85?3:1,1);}
+ rect(mc,'#87a26f',22,20,798,14);rect(mc,'#738f68',12,14,810,6);
+ for(const r of roads){rect(mc,'#d6cba2',r.x-8,r.y-8,r.w+16,r.h+16);rect(mc,'#9caa83',r.x-9,r.y-9,r.w+18,1);rect(mc,C.road,r.x,r.y,r.w,r.h);}
+ for(const r of roads){if(r.h>r.w){for(let y=r.y+6;y<r.y+r.h;y+=22)if(!roads.some(o=>o.w>o.h&&y>o.y-10&&y<o.y+o.h+10))rect(mc,C.roadLine,r.x+r.w/2,y,1,11);}else{for(let x=r.x+6;x<r.x+r.w;x+=22)if(!roads.some(o=>o.h>o.w&&x>o.x-10&&x<o.x+o.w+10))rect(mc,C.roadLine,x,r.y+r.h/2,11,1);}}
+ for(const x of [237,559])for(const y of [189,444,638]){for(let j=0;j<7;j++){rect(mc,'#ccd2b1',x+4+j*6,y-3,3,10);rect(mc,'#ccd2b1',x+4+j*6,y+39,3,10);}}
+ rect(mc,C.path,312,254,227,162);rect(mc,'#c7c69b',316,258,219,154);
+ for(let y=258;y<412;y+=12)for(let x=316;x<535;x+=16)rect(mc,'#d7cfaa',x+(y%24?8:0),y,14,10);
+ rect(mc,'#73955d',391,269,53,43);rect(mc,'#adbc83',394,271,47,38);
+ rect(mc,C.path,78,390,124,47);rect(mc,C.path,628,314,157,111);rect(mc,C.path,668,166,27,141);
+ rect(mc,'#81996d',655,250,132,77);rect(mc,'#b8bf91',659,254,124,69);rect(mc,'#8fa37b',662,257,118,63);mc.strokeStyle='#d2d1a4';mc.lineWidth=1;mc.strokeRect(672.5,268.5,96,40);mc.beginPath();mc.arc(720,289,13,0,TAU);mc.stroke();rect(mc,'#556e55',671,268,2,14);rect(mc,'#dece99',667,267,10,2);
+ rect(mc,'#bcc69b',786,233,34,456);rect(mc,'#d2c79b',790,233,23,456);
+ rect(mc,'#5c8174',822,0,138,H);rect(mc,C.water,829,0,131,H);rect(mc,'#42685f',824,0,4,H);rect(mc,'#bac49e',818,0,5,H);
+ for(let y=10;y<H;y+=20){rect(mc,'#577b65',816,y,2,9);rect(mc,'#93ae87',817,y,2,3);}rect(mc,'#79947b',816,0,2,H);
+ for(let y=0;y<H;y+=48)for(let x=841;x<W;x+=37){rect(mc,'#83afa0',x,y+(x%23),15,1);rect(mc,'#91baa5',x+5,y+(x%23)+3,5,1);}
+ for(const b of buildings){rect(mc,C.path,b.x-5,b.y+b.h-2,b.w+10,13);drawBuilding(mc,b);}
+ for(const p of pots){rect(mc,'#bd9868',p.x-5,p.y-3,10,7);rect(mc,'#d0ac79',p.x-6,p.y-4,12,3);rect(mc,'#726744',p.x-4,p.y-5,8,2);}
+ for(const b of benches){rect(mc,'#7e9770',b.x-12,b.y+2,26,4);rect(mc,'#586752',b.x-10,b.y-4,3,8);rect(mc,'#586752',b.x+8,b.y-4,3,8);rect(mc,'#b29d71',b.x-12,b.y-6,26,4);rect(mc,'#d3b980',b.x-12,b.y-7,26,1);rect(mc,'#bba578',b.x-12,b.y-1,26,3);}
+ for(const p of [[41,73],[48,141],[53,251],[44,432],[47,509],[202,537],[204,616],[316,80],[515,80],[516,156],[321,564],[527,568],[312,691],[519,695],[641,516],[767,511],[685,43],[781,182],[746,230],[633,359],[652,413],[104,474],[451,44],[120,47],[314,329],[536,342],[740,689],[100,693]])tree(mc,p[0],p[1],1);
+ for(const p of [[323,386],[525,310],[719,164],[735,164],[95,411],[171,420],[337,173],[463,173],[650,191],[718,514],[748,515],[695,495]])bush(mc,p[0],p[1]);
+ for(let i=0;i<65;i++){const x=30+sr()*772,y=38+sr()*640;if(!blocked(x,y,10)&&!roads.some(r=>x>r.x-12&&x<r.x+r.w+12&&y>r.y-12&&y<r.y+r.h+12)&&!(x>302&&x<544&&y>245&&y<430)){rect(mc,'#e0d99c',x,y,2,2);rect(mc,'#7b9865',x,y+2,1,2);}}
+ // 광장의 작은 나무 탁자.
+ rect(mc,'#8e9870',470,290,26,12);rect(mc,'#d9bc83',468,285,26,12);rect(mc,'#ece0ad',470,286,22,2);rect(mc,'#66775b',470,297,3,6);rect(mc,'#66775b',490,297,3,6);
+}
+function drawPerson(g,p,moving=false,time=0,dir=2){
+ const x=Math.round(p.x),y=Math.round(p.y),step=moving?Math.floor(time*9)%2:0;rect(g,'#385c4239',x-5,y-1,11,3);
+ rect(g,'#39534b',x-3-step,y-4,3,4);rect(g,'#39534b',x+1+step,y-4,3,4);rect(g,p.color||'#73978b',x-4,y-10,8,7);rect(g,p.color||'#73978b',x-5,y-9+(step?1:0),1,5);rect(g,p.color||'#73978b',x+4,y-9-(step?1:0),1,5);
+ rect(g,C.skin,x-3,y-16,6,6);rect(g,p.hair||'#455951',x-4,y-17,8,3);rect(g,p.hair||'#455951',x-4,y-14,1,3);
+ if(dir!==0){rect(g,'#364f44',x+(dir===3?-3:dir===1?2:-2),y-13,1,1);if(dir===2)rect(g,'#364f44',x+2,y-13,1,1);}else rect(g,p.hair||'#455951',x-3,y-14,6,3);
+ if(p.player){rect(g,'#dfb77b',x-4,y-9,8,2);if(dir===0)rect(g,'#af865d',x-3,y-9,6,5);}
+}
+function drawCat(g,x,y,color='#989b85',time=0){x=Math.round(x);y=Math.round(y);rect(g,'#365b4533',x-5,y,11,2);rect(g,color,x-4,y-5,9,5);rect(g,color,x-5,y-9,6,6);rect(g,color,x-5,y-11,2,3);rect(g,color,x-1,y-11,2,3);rect(g,'#d1cbaa',x-4,y-7,4,3);rect(g,'#3b5648',x-4,y-7,1,1);rect(g,'#3b5648',x-1,y-7,1,1);rect(g,color,x+4,y-7,2,4);rect(g,color,x+5,y-9+(Math.floor(time*2)%2),2,3);rect(g,'#c1c1a5',x-3,y,2,1);rect(g,'#c1c1a5',x+2,y,2,1);}
+function drawCar(g){const c=S.car;g.save();g.translate(Math.round(c.x),Math.round(c.y));g.rotate(c.angle);rect(g,'#3657435c',-11,-5,25,14);rect(g,'#304d43',-8,-9,5,3);rect(g,'#304d43',6,-9,4,3);rect(g,'#304d43',-8,6,5,3);rect(g,'#304d43',6,6,4,3);rect(g,'#d4bf7e',-12,-7,25,14);rect(g,'#edd794',-10,-7,21,11);rect(g,'#91b4a0',3,-5,5,10);rect(g,'#3d6658',5,-5,2,10);rect(g,'#f4e0ab',-9,-5,10,10);rect(g,'#b4a579',-7,-3,6,6);rect(g,'#82977a',-4,-2,2,4);rect(g,'#f9eabd',12,-5,2,3);rect(g,'#f9eabd',12,2,2,3);rect(g,'#a66d54',-13,-5,1,3);rect(g,'#a66d54',-13,2,1,3);if(S.catFollowing&&S.inCar)rect(g,'#777f6b',4,2,2,2);g.restore();}
+function marker(g,x,y,label,color=C.gold){const bob=S.reduced?0:Math.round(Math.sin(t*3)*1.5);rect(g,'#304f42',x-4,y-29+bob,9,10);rect(g,color,x-3,y-28+bob,7,8);rect(g,'#304f42',x-1,y-19+bob,3,2);g.fillStyle='#3e5c45';g.font='bold 7px monospace';g.textAlign='center';g.fillText(label,x+.5,y-22+bob);g.textAlign='left';}
+function draw(){
+ const cx=Math.round(cam.x),cy=Math.round(cam.y);ctx.fillStyle=C.grass;ctx.fillRect(0,0,VW,VH);ctx.save();ctx.translate(-cx,-cy);ctx.drawImage(mapCanvas,0,0);
+ if(!S.reduced)for(let i=0;i<32;i++){const y=(i*37+t*2)%H,x=838+(i*31)%113;rect(ctx,'#b4d1b855',x+Math.sin(t*.5+i)*4,y,10,1);}
+ for(const p of pots){const i=pots.indexOf(p);if(S.watered.includes(i)){rect(ctx,'#537d4f',p.x,p.y-14,1,10);rect(ctx,'#6d965d',p.x-4,p.y-11,4,3);rect(ctx,'#719c60',p.x+1,p.y-13,4,3);if(S.ended||S.quests.garden===2){rect(ctx,['#efca84','#dca696','#eedda8'][i],p.x-2,p.y-17,5,5);rect(ctx,'#fff0af',p.x,p.y-16,1,2);}}}
+ if(S.quests.fruit===1)orangeSpots.forEach((p,i)=>{if(!S.oranges.includes(i)){rect(ctx,'#849166',p.x-3,p.y+1,7,2);rect(ctx,'#c79451',p.x-3,p.y-3,6,5);rect(ctx,'#edbd6c',p.x-2,p.y-3,4,3);rect(ctx,'#5e7e50',p.x,p.y-4,2,2);if(S.selected==='fruit')sparkle(ctx,p.x,p.y-8,i);}});
+ if(S.quests.garden===1)rubbishSpots.forEach((p,i)=>{if(!S.rubbish.includes(i)){rect(ctx,'#9eaa86',p.x-4,p.y+1,8,2);rect(ctx,i%2?'#dfd8af':'#cfddd2',p.x-3,p.y-4,6,5);rect(ctx,'#93a187',p.x-1,p.y-3,2,3);if(S.selected==='garden')sparkle(ctx,p.x,p.y-9,i);}});
+ if(S.quests.letter===1&&!S.letter){rect(ctx,'#617f66',envelope.x-4,envelope.y+1,10,2);rect(ctx,'#f1e6bc',envelope.x-5,envelope.y-5,10,6);rect(ctx,'#8ba19b',envelope.x+1,envelope.y-4,2,2);rect(ctx,'#c4b68e',envelope.x-2,envelope.y-2,4,1);sparkle(ctx,envelope.x,envelope.y-11,2);}
+ const objects=[];for(const n of npcBase){const p=n;objects.push({y:p.y,draw:()=>{drawPerson(ctx,p,false,t,2);if(n.id==='host'){if(doneCount()>=4&&!S.ended)marker(ctx,p.x,p.y,'♥');}else if(S.quests[n.id]===0)marker(ctx,p.x,p.y,'·','#e8dfb1');else if(S.quests[n.id]===1)marker(ctx,p.x,p.y,'!');}});}
+ objects.push({y:S.car.y,draw:()=>drawCar(ctx)});if(!S.inCar)objects.push({y:S.player.y,draw:()=>drawPerson(ctx,{...S.player,player:true,color:'#648c7c',hair:'#40564e'},movingSpeed>2,t,S.player.dir)});
+ if(!(S.inCar&&S.catFollowing))objects.push({y:S.cat.y,draw:()=>drawCat(ctx,S.cat.x,S.cat.y,'#939889',S.catFollowing?t:0)});
+ for(const c of catsAmbient)objects.push({y:c.y,draw:()=>drawCat(ctx,c.x,c.y,c.color,t*.5)});
+ objects.push({y:305,draw:()=>tree(ctx,420,295,1.6)});
+ for(const l of lamps)objects.push({y:l.y,draw:()=>{rect(ctx,'#687957',l.x-3,l.y,9,2);rect(ctx,'#49694f',l.x,l.y-25,2,25);rect(ctx,'#3f624b',l.x-3,l.y-30,8,6);rect(ctx,S.ended||S.quests.repair===2?'#f8d689':'#c2c9a2',l.x-2,l.y-29,6,4);}});
+ objects.sort((a,b)=>a.y-b.y);objects.forEach(o=>o.draw());
+ // 가로등 아래에 걸린 작은 전구들.
+ const lightOn=S.ended||S.quests.repair===2;ctx.strokeStyle='#6c7c58';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(320,227);ctx.quadraticCurveTo(427,255,535,227);ctx.stroke();for(let i=0;i<12;i++){const x=329+i*18,y=231+Math.sin(i/11*Math.PI)*12;rect(ctx,lightOn?['#f8d38c','#eab792','#d5da9d'][i%3]:'#8e9d74',x,y,3,4);}
+ if(S.ended){rect(ctx,'#b5986c',405,339,60,13);rect(ctx,'#dfc79b',405,337,60,12);for(let i=0;i<4;i++){rect(ctx,'#ece3bc',411+i*14,340,7,5);rect(ctx,'#ac9160',413+i*14,341,3,2);}for(const p of [{x:409,y:326,color:'#c6a479',hair:'#66554b'},{x:436,y:326,color:'#8d9fac',hair:'#425354'},{x:465,y:348,color:'#998aa0',hair:'#554a51'}])drawPerson(ctx,p,false,t,2);}
+ particles.forEach(p=>rect(ctx,p.color,p.x,p.y,2,2));ctx.restore();
+ const dusk=S.ended?.23:.035+doneCount()*.009;ctx.fillStyle='rgba(45,57,64,'+dusk+')';ctx.fillRect(0,0,VW,VH);
+ if(lightOn){for(const l of lamps){let x=l.x-cx,y=l.y-27-cy;if(x<-30||x>VW+30||y<-30||y>VH+30)continue;glow(x,y,S.ended?22:13,.28);}for(let i=0;i<12;i++){let x=329+i*18-cx,y=231+Math.sin(i/11*Math.PI)*12-cy;glow(x,y,11,.15);}}
+ if(S.ended){for(const b of buildings){for(const x of [b.x+21,b.x+b.w-20])glow(x-cx,b.y+b.h-18-cy,15,.18);}if(!S.reduced)for(let i=0;i<12;i++){const x=400+Math.sin(t*.32+i*2)*109-cx,y=316+Math.cos(t*.25+i*3)*88-cy;const a=(Math.sin(t*2+i)+1)/2;ctx.globalAlpha=a;rect(ctx,'#e5dda1',x,y,1,2);ctx.globalAlpha=1;}}
+ drawGuide(cx,cy);
+ if(screenFade>0){ctx.fillStyle='rgba(244,231,188,'+screenFade*.6+')';ctx.fillRect(0,0,VW,VH);}
+}
+function sparkle(g,x,y,i){const s=S.reduced?1:Math.sin(t*3+i);if(s<-.3)return;rect(g,'#f6e6ac',x,y-2,1,5);rect(g,'#f6e6ac',x-2,y,5,1);}
+function glow(x,y,r,a){if(x<-r||x>VW+r||y<-r||y>VH+r)return;const grad=ctx.createRadialGradient(x,y,1,x,y,r);grad.addColorStop(0,'rgba(255,216,125,'+a+')');grad.addColorStop(1,'rgba(255,216,125,0)');ctx.fillStyle=grad;ctx.fillRect(x-r,y-r,r*2,r*2);}
+function drawGuide(cx,cy){
+ if(!started)return;const o=objective(),x=o.x-cx,y=o.y-cy,dx=x-VW/2,dy=y-VH/2;
+ if(x>16&&x<VW-16&&y>48&&y<VH-36){const bob=S.reduced?0:Math.sin(t*3)*2;ctx.fillStyle='#f7df97';ctx.beginPath();ctx.moveTo(x-3,y-36+bob);ctx.lineTo(x+4,y-36+bob);ctx.lineTo(x,y-31+bob);ctx.fill();return;}
+ const a=Math.atan2(dy,dx),scale=Math.min(137/Math.max(1,Math.abs(dx)),70/Math.max(1,Math.abs(dy))),px=clamp(VW/2+dx*scale,13,VW-13),py=clamp(VH/2+dy*scale,53,VH-53);
+ ctx.save();ctx.translate(Math.round(px),Math.round(py));rect(ctx,'#304f43de',-7,-7,15,15);ctx.rotate(a);ctx.fillStyle='#f9d98d';ctx.beginPath();ctx.moveTo(4,0);ctx.lineTo(-3,-4);ctx.lineTo(-3,4);ctx.fill();ctx.restore();
+}
+function openMap(){
+ showPanel('<div class="close-row"><div><div class="panel-label">A SMALL TOWN / 동네 지도</div><h2>마음 가는 곳으로</h2></div><button id="closeMap" class="small">닫기 M</button></div><div class="map-wrap"><canvas id="map" width="480" height="360" aria-label="동네 전체 지도"></canvas></div><div class="map-legend" id="mapLegend"></div><p><small>● 나 &nbsp; ▰ 배달차 &nbsp; ◆ 선택한 목적지<br>아래 이름을 누르면 길 안내가 바뀝니다. 도로와 골목을 따라 걸어 보세요.</small></p>','map',true);
+ $('#closeMap').onclick=closePanel;const mg=$('#map').getContext('2d');mg.imageSmoothingEnabled=false;mg.drawImage(mapCanvas,0,0,480,360);const labels={host:'광장',fruit:'소라',cat:'윤 · 책방',letter:'도현',repair:'민',meal:'연우 · 부엌',garden:'하람',post:'우체국',studio:'작업실'};
+ for(const n of npcBase){mg.fillStyle=n.id===S.selected?'#fff0b3':'#2c4f41';mg.fillRect(n.x/2-3,n.y/2-4,6,6);mapLabel(mg,labels[n.id],n.x/2,n.y/2+12);}
+ if(S.quests.cat===1&&!S.catFollowing)mapLabel(mg,'밤이',S.cat.x/2,S.cat.y/2-5);
+ const o=objective();mg.fillStyle='#ffe6a5';mg.beginPath();mg.moveTo(o.x/2,o.y/2-10);mg.lineTo(o.x/2+4,o.y/2-6);mg.lineTo(o.x/2,o.y/2-2);mg.lineTo(o.x/2-4,o.y/2-6);mg.fill();
+ mg.fillStyle='#f0ce83';mg.fillRect(S.car.x/2-5,S.car.y/2-3,10,6);mg.strokeStyle='#36594b';mg.strokeRect(S.car.x/2-5,S.car.y/2-3,10,6);const p=S.inCar?S.car:S.player;mg.fillStyle='#fdf3d3';mg.beginPath();mg.arc(p.x/2,p.y/2,4,0,TAU);mg.fill();mg.strokeStyle='#4d7864';mg.lineWidth=2;mg.stroke();mapLabel(mg,'나',p.x/2,p.y/2-8);
+ for(const q of quests){const b=button((S.quests[q.id]===2?'✓ ':q.icon+' ')+q.who+' · '+q.name,()=>{selectQuest(q.id);openMap()},(S.quests[q.id]===2?'done ':'')+(S.selected===q.id?'selected':''));$('#mapLegend').append(b);}
+ if(doneCount()>=4)$('#mapLegend').append(button('☼ 광장의 저녁 모임',()=>{selectQuest('host');closePanel()},'primary'));
+}
+function mapLabel(g,text,x,y){g.font='8px sans-serif';const w=g.measureText(text).width;g.fillStyle='#f6efd4e8';g.fillRect(x-w/2-3,y-8,w+6,11);g.fillStyle='#365342';g.textAlign='center';g.fillText(text,x,y);g.textAlign='left';}
+function openJournal(){
+ const completeQs=quests.filter(q=>S.quests[q.id]===2);showPanel('<div class="close-row"><div><div class="panel-label">POCKET NOTEBOOK / 오늘의 수첩</div><h2>기억하고 싶은 것들</h2></div><button id="closeJournal" class="small">닫기 J</button></div><p>내가 한 일만 적는 수첩은 아니에요.<br>내가 받은 것들도 여기에 남습니다.</p><div class="inventory">'+(S.quests.fruit===2?'<span>소라가 건넨 귤 하나</span>':'')+(S.catFollowing?'<span>밤이의 작은 발소리</span>':'')+(S.quests.meal===2?'<span>내 몫의 따뜻한 저녁</span>':'')+(S.ended?'<span>광장에 남겨 둔 내 자리</span>':'')+'</div>'+(!completeQs.length?'<div class="notebook-entry"><p>아직 빈 페이지. 무언가 증명할 필요 없이,<br>첫 번째 사람에게 인사해 보세요.</p></div>':completeQs.map(q=>'<article class="notebook-entry"><h3>'+q.icon+' '+q.name+'</h3><p>'+q.note+'</p></article>').join(''))+(S.restCount?'<article class="notebook-entry"><h3>벤치에서</h3><p>쉬는 동안에도 동네는 나를 기다려 주었다.</p></article>':'')+'<div class="panel-actions"><button id="exportJournal">진행 보관 · 수첩 내보내기</button><button id="backJournal" class="primary">계속 걷기</button></div>','journal');
+ $('#closeJournal').onclick=$('#backJournal').onclick=closePanel;$('#exportJournal').onclick=exportSave;
+}
+function exportSave(){save();const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='돌아오는_불빛_수첩.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);notify('수첩 파일은 메뉴의 가져오기로 이어할 수 있어요.');}
+function openMenu(){
+ showPanel('<div class="close-row"><div><div class="panel-label">TAKE YOUR TIME</div><h2>잠깐, 쉬어 가기</h2></div><button id="closeMenu" class="small">계속하기</button></div><div class="help-grid"><b>걷기</b><span>WASD / 방향키 / 화면의 십자 버튼</span><b>대화·살펴보기</b><span>F 또는 Space / 말 걸기 버튼</span><b>차량</b><span>E로 타고 내리기. W/↑ 가속, S/↓ 감속·후진.<br>A D / ← → 조향, Space / 브레이크 버튼으로 제동.</span><b>고양이 곁에서는</b><span>Shift를 누르거나 살금살금 버튼 켜기.<br>가만히 기다리는 것도 좋아요.</span><b>길 찾기</b><span>M 지도 · J 수첩 · 선택한 약속을 따라 화살표가 생겨요.</span></div><label class="option"><input type="checkbox" id="reduce" '+(S.reduced?'checked':'')+'>반짝임과 카메라 움직임 줄이기</label><div class="panel-actions"><button id="menuSound">소리 '+(S.sound?'끄기':'켜기')+'</button><button id="exportSave">수첩 내보내기</button><button id="importSave">수첩 가져오기</button><button id="homeRescue">길을 잃었어요</button></div><p><small>같은 브라우저에서 진행을 자동으로 기억합니다. 파일 앱의 미리보기나 일부 사생활 보호 모드에서는 저장되지 않을 수 있어요. 그때는 수첩을 파일로 보관해 주세요.<br>시간 제한은 없어요. 퍼즐에서 도움을 부탁해도 이야기의 결말은 달라지지 않습니다.</small></p><div class="panel-actions"><button id="resetBtn" class="quiet danger">새로운 하루 시작</button><button id="resumeBtn" class="primary">다시 걸어가기</button></div>','menu');
+ $('#closeMenu').onclick=$('#resumeBtn').onclick=closePanel;$('#reduce').onchange=e=>{S.reduced=e.target.checked;save()};$('#menuSound').onclick=()=>{toggleSound();openMenu()};$('#exportSave').onclick=exportSave;$('#importSave').onclick=()=>$('#importInput').click();$('#homeRescue').onclick=()=>{closePanel();talk([say('host','길이 조금 헷갈렸죠? 같이 광장으로 가요.\n차도 부엌 앞에 옮겨 둘게요.')],()=>{S.inCar=false;S.player={x:410,y:374,dir:2};S.car={x:338,y:214,angle:0,speed:0};if(S.catFollowing)S.cat={x:420,y:380};catPath=[];refreshUI();save();});};
+ $('#resetBtn').onclick=()=>{showPanel('<h2>새로운 하루를 시작할까요?</h2><p>지금까지의 진행은 새 하루로 바뀝니다.<br>간직하고 싶다면 먼저 수첩을 내보내 주세요.</p><div class="panel-actions"><button id="cancelReset">돌아가기</button><button id="confirmReset" class="danger">새 하루 시작</button></div>','reset');$('#cancelReset').onclick=openMenu;$('#confirmReset').onclick=()=>{S=fresh();started=false;hasSave=false;try{localStorage.removeItem(SAVEKEY)}catch(e){}closePanel();startGame(false);};};
+}
+$('#importInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>100000)throw Error('수첩 파일의 크기가 너무 커요.');const n=validate(JSON.parse(await f.text()));S=n;started=true;S.player={...S.player,...nearestFree(S.player)};if(carBoxBlocked(S.car.x,S.car.y,S.car.angle))S.car={x:338,y:214,angle:0,speed:0};catPath=[];cam={x:clamp(S.player.x-VW/2,0,W-VW),y:clamp(S.player.y-VH/2,0,H-VH)};closePanel();if(S.sound)sound.init();refreshUI();notify('기억해 둔 동네로 돌아왔어요.');save();}catch(err){notify(err.message||'수첩을 읽지 못했어요.');alert('수첩을 읽지 못했어요. 이 게임에서 내보낸 JSON 파일을 골라 주세요.');}e.target.value='';});
+function showTitle(){
+ showPanel('<div class="panel-label">A GAME ABOUT THE KINDNESS THAT RETURNS</div><div class="intro-pixel"><i class="intro-cloud"></i><i class="intro-houses"></i></div><h2>돌아오는 불빛</h2><p>낯익은 동네, 조금 지친 오후.<br>오늘은 거창한 영웅이 되는 대신,<br>누군가의 곁에 잠깐 머물러 보면 어떨까요.</p><p>걸어서, 작은 차를 타고, 고양이의 속도로.<br>동네의 여섯 이야기를 원하는 순서로 만나세요.</p><div class="panel-actions"><button id="startBtn" class="primary">'+(hasSave?'이어서 걷기':'동네에 들어가기')+'</button><button id="titleSound">소리 '+(S.sound?'켜짐 ♪':'꺼짐 ♪')+'</button></div><p><small>키보드와 터치 모두 지원 · 첫 저녁까지 약 15–25분<br>시간 제한 없음 · 자동 저장 · 인터넷 없이 실행</small></p>','title');
+ $('#startBtn').onclick=()=>startGame(hasSave);$('#titleSound').onclick=()=>{toggleSound();$('#titleSound').textContent='소리 '+(S.sound?'켜짐 ♪':'꺼짐 ♪');};
+}
+function startGame(resume){
+ started=true;S.car.speed=0;S.player={...S.player,...nearestFree(S.player)};if(carBoxBlocked(S.car.x,S.car.y,S.car.angle))S.car={x:338,y:214,angle:0,speed:0};cam={x:clamp(S.player.x-VW/2,0,W-VW),y:clamp(S.player.y-VH/2,0,H-VH)};closePanel();if(S.sound)sound.init();refreshUI();
+ if(!resume)talk([say('작은 저녁','오늘은 세상이 조금 각박하게 느껴지는 날이었다.\n볼일도 없이, 가방 하나를 메고 동네를 나왔다.'),say('host','안녕하세요. 처음 보는 얼굴은 아닌 것 같은데.\n저녁에 여기서 같이 밥 먹을래요?'),say('host','그때까지 동네를 한 바퀴 돌아도 좋아요.\n마음 가는 약속을 고르면 화살표가 길을 알려 줄 거예요.'),say('host','아, 차는 부엌 앞에 있어요.\n필요하면 타요. 오늘도 혼자 다 걸을 필요는 없으니까.')],()=>{notify('첫 약속은 소라 상점. 다른 이야기를 먼저 골라도 좋아요.',5);save();});else notify('다시 왔네요. 동네는 여기 있었어요.');
+}
+$('#mapBtn').onclick=$('#touchMap').onclick=()=>{if(started)openMap()};$('#journalBtn').onclick=()=>{if(started)openJournal()};$('#menuBtn').onclick=()=>{if(started)openMenu()};$('#soundBtn').onclick=toggleSound;$('#carBtn').onclick=toggleCar;
+$('#quietBtn').addEventListener('pointerdown',e=>{if(S.inCar){keys.brake=true;e.currentTarget.setPointerCapture(e.pointerId);}else{S.quiet=!S.quiet;refreshUI();save();}});$('#quietBtn').addEventListener('pointerup',()=>{keys.brake=false});$('#quietBtn').addEventListener('pointercancel',()=>{keys.brake=false});
+$('#actionBtn').addEventListener('pointerdown',e=>{e.preventDefault();if(S.inCar){keys.brake=true;e.currentTarget.setPointerCapture(e.pointerId);}else interact()});for(const ev of ['pointerup','pointercancel','lostpointercapture'])$('#actionBtn').addEventListener(ev,()=>{keys.brake=false});
+$$('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(overlayType)return;b.setPointerCapture(e.pointerId);keys[b.dataset.key]=true;b.classList.add('down')});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,e=>{keys[b.dataset.key]=false;b.classList.remove('down')});});
+document.addEventListener('keydown',e=>{
+ const k=e.key.toLowerCase();
+ if(overlayType){
+ if(k==='tab'){const items=$$('#overlay button:not(:disabled),#overlay input:not(:disabled)'),first=items[0],last=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}return;}
+ if(e.repeat)return;
+ if(overlayType==='dialogue'&&['f',' '].includes(k)){e.preventDefault();if(!dialogue?.lines[dialogue.index].choices)advanceDialogue();return;}
+ if(k==='escape'&&!['title','dialogue','ending'].includes(overlayType)){e.preventDefault();closePanel();return;}
+ if((k==='m'&&overlayType==='map')||(k==='j'&&overlayType==='journal')){e.preventDefault();closePanel()}return;
+ }
+ if(!started)return;if(['arrowup','arrowdown','arrowleft','arrowright',' ','tab'].includes(k)&&k!=='tab')e.preventDefault();
+ const actionKey=['f','e','m','j','escape'].includes(k)||(k===' '&&!S.inCar);if(actionKey&&e.repeat)return;
+ if(k==='e')toggleCar();else if(k==='f'||(k===' '&&!S.inCar))interact();else if(k==='m')openMap();else if(k==='j')openJournal();else if(k==='escape')openMenu();else keys[k]=true;
+});
+document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+window.addEventListener('blur',()=>{clearKeys();S.car.speed=0;save();if(sound.ac)sound.ac.suspend().catch(()=>{});});window.addEventListener('focus',()=>{if(S.sound&&sound.ac)sound.ac.resume().catch(()=>{});frameTime=performance.now();});document.addEventListener('visibilitychange',()=>{clearKeys();if(document.hidden){save();if(sound.ac)sound.ac.suspend().catch(()=>{});}else if(S.sound)sound.init();});window.addEventListener('pagehide',save);
+function frame(now){const dt=clamp((now-(frameTime||now))/1000,.001,.035);frameTime=now;update(dt);draw();requestAnimationFrame(frame);}
+buildMap();refreshUI();showTitle();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
