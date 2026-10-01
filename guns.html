@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>POCKET RAID - ACTION</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #1e202d;
+  font-family: 'Courier New', Courier, monospace;
+  overflow: hidden;
+  color: #fff;
+}
+.gameboy {
+  width: min(96vw, 480px);
+  padding: 20px 22px 24px;
+  border-radius: 22px 22px 65px 22px;
+  background: linear-gradient(145deg, #d2cfc4, #94938d);
+  border: 4px solid #6b6c66;
+  box-shadow:
+    0 16px 36px rgba(0,0,0,0.6),
+    inset 4px 4px 8px rgba(255,255,255,0.5),
+    inset -6px -7px 10px rgba(0,0,0,0.35);
+  position: relative;
+}
+.screen-shell {
+  background: #363842;
+  padding: 16px 18px 18px;
+  border-radius: 12px 12px 32px 12px;
+  box-shadow: inset 0 3px 8px rgba(0,0,0,0.5);
+}
+.screen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #aaa;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+.power-led {
+  width: 8px;
+  height: 8px;
+  background-color: #ff3b30;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #ff3b30;
+  display: inline-block;
+  margin-right: 4px;
+}
+canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 160 / 144;
+  image-rendering: pixelated;
+  background: #8bd8d0;
+  border: 4px solid #14171c;
+  border-radius: 4px;
+  cursor: crosshair;
+}
+.logo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 6px 4px;
+}
+.logo {
+  font-weight: 900;
+  font-style: italic;
+  font-size: 18px;
+  color: #2b2b5c;
+  letter-spacing: 1px;
+}
+.logo span {
+  color: #8b2764;
+}
+.badge {
+  font-size: 9px;
+  background: #2b2b5c;
+  color: #00ffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+.controls {
+  position: relative;
+  height: 150px;
+  margin-top: 8px;
+}
+.dpad {
+  position: absolute;
+  left: 6px;
+  top: 20px;
+  width: 120px;
+  height: 120px;
+}
+.btn {
+  position: absolute;
+  border: 0;
+  background: #27282d;
+  color: #888;
+  font: bold 16px monospace;
+  box-shadow:
+    inset 2px 2px 3px #555,
+    inset -3px -3px 4px #080808,
+    2px 3px 5px rgba(0,0,0,0.4);
+  cursor: pointer;
+}
+.btn:active, .btn.on {
+  background: #1a1b1f;
+  transform: translateY(2px);
+  box-shadow: inset 1px 1px 2px #000;
+}
+.up, .down {
+  width: 40px;
+  height: 44px;
+  left: 40px;
+}
+.left, .right {
+  width: 44px;
+  height: 40px;
+  top: 40px;
+}
+.up { top: 0; border-radius: 6px 6px 0 0; }
+.down { top: 76px; border-radius: 0 0 6px 6px; }
+.left { left: 0; border-radius: 6px 0 0 6px; }
+.right { right: 0; border-radius: 0 6px 6px 0; }
+.center {
+  position: absolute;
+  left: 40px;
+  top: 40px;
+  width: 40px;
+  height: 40px;
+  background: #27282d;
+}
+.ab {
+  position: absolute;
+  right: 6px;
+  top: 28px;
+  width: 150px;
+  height: 90px;
+  transform: rotate(-12deg);
+}
+.round {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border: 0;
+  border-radius: 50%;
+  background: #85204e;
+  color: #f7a2c8;
+  font: bold 18px monospace;
+  box-shadow:
+    inset 3px 3px 4px #b8507a,
+    inset -4px -4px 5px #420c28,
+    2px 4px 6px rgba(0,0,0,0.4);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  line-height: 1.1;
+}
+.round small {
+  font-size: 8px;
+  opacity: 0.85;
+}
+#a { right: 0; top: 0; }
+#b { left: 6px; bottom: 0; }
+.round:active, .round.on {
+  transform: translateY(3px);
+  box-shadow: inset 2px 2px 4px #30081d;
+}
+.help {
+  text-align: center;
+  color: #3b3d45;
+  font-size: 9px;
+  font-weight: bold;
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+}
+</style>
+</head>
+
+<body>
+
+<div class="gameboy">
+
+  <div class="screen-shell">
+    <div class="screen-header">
+      <div><span class="power-led"></span>POCKET RAID</div>
+      <div>CRIT 3X ENABLED</div>
+    </div>
+    <canvas id="game" width="160" height="144"></canvas>
+  </div>
+
+  <div class="logo-row">
+    <div class="logo">Pocket <span>RAID</span></div>
+    <div class="badge">SYSTEM READY</div>
+  </div>
+
+  <div class="controls">
+
+    <div class="dpad">
+      <button class="btn up" id="up">▲</button>
+      <button class="btn left" id="left">◀</button>
+      <div class="center"></div>
+      <button class="btn right" id="right">▶</button>
+      <button class="btn down" id="down">▼</button>
+    </div>
+
+    <div class="ab">
+      <button class="round" id="a">A<small>AUTO</small></button>
+      <button class="round" id="b">B<small>SHOTGUN</small></button>
+    </div>
+
+  </div>
+
+  <div class="help">
+    WASD / ARROWS : MOVE | L-CLICK / A (HOLD) : RAPID GUN<br>
+    R-CLICK / B (TAP) : SHOTGUN | 7% CRIT (3s x3 DMG)<br>
+    EDGE : CHOP WOOD | CENTER : BUILD HOUSE
+  </div>
+
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+
+const W = 160;
+const H = 144;
+
+// Prevent Context Menu globally & on canvas
+window.addEventListener("contextmenu", e => e.preventDefault());
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+let playerX = 0;
+let distance = 0;
+let hp = 100;
+let score = 0;
+let flash = 0;
+let shake = 0;
+let gameOver = false;
+
+// Weapon & Firing States
+let lastAutoGunTime = 0;
+const AUTO_GUN_INTERVAL = 110; // Rapid fire rate in ms
+
+// Critical Hit System Logic
+// State: 'READY', 'ACTIVE', 'COOLDOWN'
+let critState = 'READY';
+let critTimer = 0; // Duration in seconds
+const CRIT_PROBABILITY = 0.07; // 7% chance per bullet fired
+const CRIT_ACTIVE_DURATION = 3.0; // 3 seconds active
+const CRIT_COOLDOWN_DURATION = 3.0; // 3 seconds cooldown
+
+// Sound Synthesizer (Web Audio API)
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+
+// 창이 포커스를 잃으면 눌림 상태 초기화 (키가 계속 눌린 채로 남는 문제 방지)
+window.addEventListener("blur", () => {
+  keys = {};
+  mouse.leftDown = mouse.rightDown = false;
+  for (const k in touch) touch[k] = false;
+  document.querySelectorAll(".on").forEach(el => el.classList.remove("on"));
+});
+
+function playSound(type) {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    const now = audioCtx.currentTime;
+    if (type === 'mg') { // Machine Gun sound
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.08);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } else if (type === 'sg') { // Shotgun sound
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 0.2);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } else if (type === 'crit') { // Critical Trigger Sound
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.25); // C6
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } else if (type === 'hit') { // Hit sound
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.linearRampToValueAtTime(40, now + 0.05);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    }
+  } catch(e) {}
+}
+
+
+let keys = {};
+let mouse = {
+  leftDown: false,
+  rightDown: false
+};
+let touch = {
+  left: false,
+  right: false,
+  up: false,
+  down: false,
+  btnA: false,
+  btnB: false
+};
+
+// Keyboard Listeners
+window.addEventListener("keydown", e => {
+  initAudio();
+  keys[e.code] = true;
+
+  // Spacebar as alternate auto-fire or shotgun key
+  if (e.code === "Space") {
+    e.preventDefault();
+  }
+
+  if (e.code === "KeyR" && gameOver) {
+    resetGame();
+  }
+});
+
+window.addEventListener("keyup", e => {
+  keys[e.code] = false;
+});
+
+// Mouse Listeners on Canvas / Window
+window.addEventListener("mousedown", e => {
+  initAudio();
+  if (e.target.closest && e.target.closest(".controls")) return; // 키패드 클릭은 제외
+  if (gameOver) return;
+
+  if (e.button === 0) { // Left Click = Machine Gun
+    mouse.leftDown = true;
+  } else if (e.button === 2) { // Right Click = Shotgun (semi-auto)
+    mouse.rightDown = true;
+    fireShotgun();
+  }
+});
+
+window.addEventListener("mouseup", e => {
+  if (e.button === 0) mouse.leftDown = false;
+  if (e.button === 2) mouse.rightDown = false;
+});
+
+// Touch / Button Binding Helpers
+function bindDPad(id, name) {
+  const el = document.getElementById(id);
+  el.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    initAudio();
+    touch[name] = true;
+    el.classList.add("on");
+  });
+  el.addEventListener("pointerup", e => {
+    touch[name] = false;
+    el.classList.remove("on");
+  });
+  el.addEventListener("pointercancel", e => {
+    touch[name] = false;
+    el.classList.remove("on");
+  });
+  el.addEventListener("pointerleave", e => {
+    touch[name] = false;
+    el.classList.remove("on");
+  });
+}
+
+bindDPad("left", "left");
+bindDPad("right", "right");
+bindDPad("up", "up");
+bindDPad("down", "down");
+
+// Button A: Machine Gun (Continuous Hold)
+const btnA = document.getElementById("a");
+btnA.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  initAudio();
+  touch.btnA = true;
+  btnA.classList.add("on");
+});
+btnA.addEventListener("pointerup", e => {
+  touch.btnA = false;
+  btnA.classList.remove("on");
+});
+btnA.addEventListener("pointercancel", e => {
+  touch.btnA = false;
+  btnA.classList.remove("on");
+});
+btnA.addEventListener("pointerleave", e => {
+  touch.btnA = false;
+  btnA.classList.remove("on");
+});
+
+// Button B: Shotgun (Semi-Auto Tap)
+const btnB = document.getElementById("b");
+btnB.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  initAudio();
+  fireShotgun();
+  btnB.classList.add("on");
+});
+btnB.addEventListener("pointerup", e => {
+  btnB.classList.remove("on");
+});
+btnB.addEventListener("pointercancel", e => {
+  btnB.classList.remove("on");
+});
+btnB.addEventListener("pointerleave", e => {
+  btnB.classList.remove("on");
+});
+
+
+let bullets = [];
+let enemies = [];
+let particles = [];
+let floatTexts = [];
+
+// ---- 나무 채집 & 집 짓기 설정 (숫자만 바꾸면 조절됨) ----
+const MAX_WOOD = 15;        // 등에 쌓을 수 있는 최대 나무 수
+const CHOP_TIME = 2;        // 가장자리에서 나무 1개 얻는 시간(초)
+const DROP_TIME = 1;        // 중앙에서 나무 1개 내려놓는 시간(초)
+const LOGS_PER_HOUSE = 3;  // 집 1채에 필요한 나무 수
+const EDGE_X = 0.6;         // |playerX| 이상이면 가장자리
+const CENTER_X = 0.25;      // |playerX| 이하이면 중앙
+const HOUSE_Y = 130;        // 집 바닥 높이
+const HOUSE_SLOTS = [-28, 28, -46, 46, -64, 64]; // 집이 생기는 자리(중앙 기준 x)
+
+let wood = 0, chopTimer = 0, dropTimer = 0;
+let groundLogs = 0, houseCount = 0;
+let houses = [];   // 자리별 완성된 집
+let logAnims = []; // 날아가는 나무
+function nextSlot() { return houseCount % HOUSE_SLOTS.length; }
+
+function spawnEnemy() {
+  enemies.push({
+    x: (Math.random() * 1.6) - 0.8,
+    z: 1,
+    hp: 4,
+    maxHp: 4,
+    shoot: Math.random() * 100 + 70,
+    type: Math.random() < 0.3 ? 1 : 0
+  });
+}
+
+// Initial Spawn
+for (let i = 0; i < 3; i++) {
+  setTimeout(spawnEnemy, i * 600);
+}
+
+function resetGame() {
+  playerX = 0;
+  distance = 0;
+  hp = 100;
+  score = 0;
+  flash = 0;
+  shake = 0;
+  gameOver = false;
+  critState = 'READY';
+  critTimer = 0;
+  bullets = [];
+  enemies = [];
+  particles = [];
+  floatTexts = [];
+  wood = 0; chopTimer = 0; dropTimer = 0;
+  groundLogs = 0; houseCount = 0; houses = []; logAnims = [];
+  for (let i = 0; i < 3; i++) {
+    spawnEnemy();
+  }
+}
+
+
+// Check Critical Trigger whenever a bullet/pellet is fired
+function checkCritTrigger() {
+  if (critState === 'READY') {
+    if (Math.random() < CRIT_PROBABILITY) {
+      critState = 'ACTIVE';
+      critTimer = CRIT_ACTIVE_DURATION;
+      playSound('crit');
+      addFloatingText("CRITICAL 3X!", 80, 50, "#00ffff");
+    }
+  }
+}
+
+function getDamageMultiplier() {
+  return critState === 'ACTIVE' ? 3.0 : 1.0;
+}
+
+// Machine Gun (A / Left Click) - Rapid, weak fire
+function fireMachineGun() {
+  if (gameOver) return;
+
+  checkCritTrigger();
+  playSound('mg');
+  flash = 3;
+
+  const mult = getDamageMultiplier();
+  const baseDmg = 1.0;
+  const dmg = baseDmg * mult;
+
+  bullets.push({
+    x: playerX + (Math.random() - 0.5) * 0.03,
+    z: 0,
+    vx: (Math.random() - 0.5) * 0.01,
+    vz: 0.12,
+    life: 1.0,
+    damage: dmg,
+    isCrit: critState === 'ACTIVE',
+    type: 'mg'
+  });
+
+  processBulletHits(playerX, 0.08, dmg);
+}
+
+// Shotgun (B / Right Click) - Spread pellets, high damage, tap to fire
+function fireShotgun() {
+  if (gameOver) return;
+
+  checkCritTrigger();
+  playSound('sg');
+  flash = 6;
+  shake = 4;
+
+  const mult = getDamageMultiplier();
+  const pellets = 5;
+  const baseDmgPerPellet = 1.2;
+  const dmg = baseDmgPerPellet * mult;
+
+  for (let i = 0; i < pellets; i++) {
+    const spreadX = (i - (pellets - 1) / 2) * 0.06 + (Math.random() - 0.5) * 0.03;
+    bullets.push({
+      x: playerX,
+      z: 0,
+      vx: spreadX * 0.25,
+      vz: 0.10 + Math.random() * 0.03,
+      life: 0.8,
+      damage: dmg,
+      isCrit: critState === 'ACTIVE',
+      type: 'sg'
+    });
+
+    processBulletHits(playerX + spreadX, 0.18, dmg);
+  }
+}
+
+function processBulletHits(fireX, spreadTolerance, damage) {
+  let hitEnemy = null;
+  let nearestZ = 999;
+
+  enemies.forEach(e => {
+    const hitBoxWidth = 0.12 + (1 - e.z) * 0.22;
+    if (Math.abs(e.x - fireX) < hitBoxWidth + spreadTolerance && e.z < nearestZ) {
+      hitEnemy = e;
+      nearestZ = e.z;
+    }
+  });
+
+  if (hitEnemy) {
+    hitEnemy.hp -= damage;
+    playSound('hit');
+
+    // 동전 + 롤리팝 터지는 효과 (피 대신)
+    const hp0 = project(hitEnemy.x, hitEnemy.z);
+    spawnTreats(hp0.x, hp0.y - 7 * hp0.scale, 3);
+
+    // Floating damage text
+    const proj = project(hitEnemy.x, hitEnemy.z);
+    addFloatingText(
+      Math.round(damage * 10) / 10,
+      proj.x + (Math.random() - 0.5) * 10,
+      proj.y - 12,
+      critState === 'ACTIVE' ? '#00ffff' : '#ffffff'
+    );
+
+    if (hitEnemy.hp <= 0) {
+      score += hitEnemy.type ? 150 : 100;
+      spawnTreats(hp0.x, hp0.y - 7 * hp0.scale, 6); // 처치 보너스
+      enemies.splice(enemies.indexOf(hitEnemy), 1);
+    }
+  }
+}
+
+// 동전(0) / 롤리팝(1)을 번갈아 튀어나오게 함 - 화면 좌표 기준, 최대 40개로 제한
+function spawnTreats(x, y, n) {
+  for (let i = 0; i < n; i++) {
+    if (particles.length >= 40) break;
+    particles.push({
+      x: x, y: y,
+      vx: (Math.random() - 0.5) * 2.4,
+      vy: -(0.8 + Math.random() * 1.6),
+      life: 24,
+      kind: i % 2
+    });
+  }
+}
+
+function drawCoin(x, y, life) {
+  // 빙글빙글 도는 동전: 가로 폭이 변함
+  const w = 1 + Math.round(Math.abs(Math.cos(life * 0.5)) * 2);
+  ctx.fillStyle = "#ffc01e";
+  ctx.fillRect(x - w, y - 3, w * 2, 6);
+  if (w > 1) {
+    ctx.fillStyle = "#fff200";
+    ctx.fillRect(x - w + 1, y - 2, w * 2 - 2, 4);
+  }
+}
+
+function drawLolly(x, y) {
+  ctx.fillStyle = "#1c1c1c";           // 막대 + 테두리
+  ctx.fillRect(x, y + 3, 1, 5);
+  ctx.fillRect(x - 4, y - 4, 8, 8);
+  ctx.fillStyle = "#ffb3d1";           // 분홍 사탕
+  ctx.fillRect(x - 3, y - 3, 6, 6);
+  ctx.fillStyle = "#ff7fb0";           // 소용돌이 느낌
+  ctx.fillRect(x - 2, y - 2, 4, 4);
+  ctx.fillStyle = "#ffb3d1";
+  ctx.fillRect(x - 1, y - 1, 2, 2);
+}
+
+function addFloatingText(str, x, y, color) {
+  floatTexts.push({
+    text: str,
+    x: x,
+    y: y,
+    life: 30,
+    color: color || '#ffffff'
+  });
+}
+
+
+function project(x, z) {
+  /*
+   z=1 horizon
+   z=0 player
+  */
+  const y = 48 + (1 - z) * 75;
+  const spread = 14 + (1 - z) * 98;
+
+  return {
+    x: 80 + x * spread,
+    y: y,
+    scale: 0.2 + (1 - z) * 1.15
+  };
+}
+
+
+let lastTime = performance.now();
+
+function update() {
+  if (gameOver) return;
+
+  const now = performance.now();
+  const dt = Math.min((now - lastTime) / 1000, 0.1); // delta time in seconds
+  lastTime = now;
+
+  // 1. Critical System Timer Logic
+  if (critState === 'ACTIVE') {
+    critTimer -= dt;
+    if (critTimer <= 0) {
+      critState = 'COOLDOWN';
+      critTimer = CRIT_COOLDOWN_DURATION;
+    }
+  } else if (critState === 'COOLDOWN') {
+    critTimer -= dt;
+    if (critTimer <= 0) {
+      critState = 'READY';
+      critTimer = 0;
+    }
+  }
+
+  // 2. Auto-Heal: Full HP when 0 enemies on screen
+  if (enemies.length === 0) {
+    if (hp < 100) {
+      hp = 100;
+    }
+  }
+
+  // 3. Movement
+  let speed = 0.022;
+  if (keys.KeyA || keys.ArrowLeft || touch.left) playerX -= speed;
+  if (keys.KeyD || keys.ArrowRight || touch.right) playerX += speed;
+  playerX = Math.max(-0.80, Math.min(0.80, playerX));
+
+  if (keys.KeyW || keys.ArrowUp || touch.up) distance += 0.06;
+  else distance += 0.025;
+
+  // 3-B. 나무 채집(가장자리) / 집 짓기(중앙)
+  const inEdge = Math.abs(playerX) >= EDGE_X;
+  const inCenter = Math.abs(playerX) <= CENTER_X;
+
+  if (inEdge && wood < MAX_WOOD) {
+    chopTimer += dt;
+    if (chopTimer >= CHOP_TIME) {
+      chopTimer = 0;
+      wood++;
+      addFloatingText("+WOOD", 80 + playerX * 80 - 12, 88, "#d9a05b");
+    }
+  } else {
+    chopTimer = 0;
+  }
+
+  if (inCenter && wood > 0) {
+    dropTimer += dt;
+    if (dropTimer >= DROP_TIME) {
+      dropTimer -= DROP_TIME;
+      wood--;
+      logAnims.push({
+        t: 0,
+        x0: 80 + playerX * 80, y0: 108,
+        x1: 80 + HOUSE_SLOTS[nextSlot()],
+        y1: HOUSE_Y - 2 - Math.floor(groundLogs / 5) * 2
+      });
+    }
+  } else {
+    dropTimer = 0;
+  }
+
+  logAnims.forEach(a => { a.t += dt / 0.45; });
+  logAnims = logAnims.filter(a => {
+    if (a.t < 1) return true;
+    groundLogs++;
+    if (groundLogs >= LOGS_PER_HOUSE) {
+      const slot = nextSlot();
+      const hx = 80 + HOUSE_SLOTS[slot];
+      houses[slot] = { x: hx };
+      houseCount++;
+      groundLogs = 0;
+      spawnTreats(hx, HOUSE_Y - 10, 6);
+      addFloatingText("HOUSE!", hx - 12, HOUSE_Y - 20, "#ffd93b");
+      playSound('crit');
+    }
+    return false;
+  });
+
+  // 4. Continuous Auto-Gun Firing (Button A / Left Mouse / Space)
+  if (mouse.leftDown || touch.btnA || keys.Space) {
+    if (now - lastAutoGunTime >= AUTO_GUN_INTERVAL) {
+      fireMachineGun();
+      lastAutoGunTime = now;
+    }
+  }
+
+  // 5. Enemy Logic
+  enemies.forEach(e => {
+    e.z -= 0.0035;
+
+    // Slowly track player
+    if (e.x < playerX) e.x += 0.0009;
+    if (e.x > playerX) e.x -= 0.0009;
+
+    e.shoot--;
+
+    if (e.shoot <= 0 && e.z < 0.75) {
+      e.shoot = Math.random() * 90 + 80;
+      if (Math.abs(e.x - playerX) < 0.30) {
+        hp -= e.type ? 12 : 8;
+        shake = 5;
+        if (hp <= 0) {
+          hp = 0;
+          gameOver = true;
+        }
+      }
+    }
+
+    if (e.z < 0.04) {
+      hp -= 15;
+      shake = 8;
+      e.z = 1;
+      e.x = Math.random() * 1.6 - 0.8;
+      if (hp <= 0) {
+        hp = 0;
+        gameOver = true;
+      }
+    }
+  });
+
+  // Spawn new enemies if needed
+  if (enemies.length < 4 && Math.random() < 0.015) {
+    spawnEnemy();
+  }
+
+  // 6. Bullets Update
+  bullets.forEach(b => {
+    b.z += b.vz;
+    b.x += b.vx;
+    b.life -= 0.05;
+  });
+  bullets = bullets.filter(b => b.life > 0 && b.z < 1.1);
+
+  // 7. Particles Update
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.13; // 중력
+    p.life--;
+  });
+  particles = particles.filter(p => p.life > 0);
+
+  // 8. Floating text update
+  floatTexts.forEach(ft => {
+    ft.y -= 0.4;
+    ft.life--;
+  });
+  floatTexts = floatTexts.filter(ft => ft.life > 0);
+
+  if (flash > 0) flash--;
+  if (shake > 0) shake--;
+}
+
+
+function drawWorld() {
+  // Sky
+  ctx.fillStyle = critState === 'ACTIVE' ? "#1a3b4d" : "#67c7d4";
+  ctx.fillRect(0, 0, 160, 48);
+
+  // Clouds
+  ctx.fillStyle = critState === 'ACTIVE' ? "#458b9e" : "#bce7cf";
+  ctx.fillRect(10, 12, 25, 5);
+  ctx.fillRect(18, 8, 12, 5);
+  ctx.fillRect(115, 18, 31, 5);
+  ctx.fillRect(124, 14, 14, 5);
+
+  // Distant Mountains
+  ctx.fillStyle = critState === 'ACTIVE' ? "#1e4d58" : "#587c72";
+  ctx.beginPath();
+  ctx.moveTo(0, 48);
+  ctx.lineTo(20, 26);
+  ctx.lineTo(37, 48);
+  ctx.lineTo(60, 31);
+  ctx.lineTo(82, 48);
+  ctx.lineTo(110, 25);
+  ctx.lineTo(140, 48);
+  ctx.lineTo(160, 34);
+  ctx.lineTo(160, 48);
+  ctx.fill();
+
+  // Road Ground
+  ctx.fillStyle = "#59655b";
+  ctx.beginPath();
+  ctx.moveTo(58, 48);
+  ctx.lineTo(102, 48);
+  ctx.lineTo(160, 132);
+  ctx.lineTo(0, 132);
+  ctx.closePath();
+  ctx.fill();
+
+  // Side Terrain Left / Right
+  ctx.fillStyle = "#77a647";
+  ctx.beginPath();
+  ctx.moveTo(0, 48);
+  ctx.lineTo(58, 48);
+  ctx.lineTo(0, 132);
+  ctx.fill();
+
+  ctx.fillStyle = "#b7a649";
+  ctx.beginPath();
+  ctx.moveTo(102, 48);
+  ctx.lineTo(160, 48);
+  ctx.lineTo(160, 132);
+  ctx.fill();
+
+  // Perspective Road Lines
+  ctx.strokeStyle = "#91a68b";
+  ctx.lineWidth = 1;
+  [-0.8, -0.4, 0, 0.4, 0.8].forEach(x => {
+    ctx.beginPath();
+    let a = project(x, 1);
+    let b = project(x, 0);
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  });
+
+  // Road Stripes Movement Animation
+  for (let i = 0; i < 10; i++) {
+    let z = ((i / 10) + (distance % 1)) % 1;
+    let p = project(0, z);
+    let width = (1 - z) * 150 + 15;
+    ctx.fillStyle = i % 2 ? "#718176" : "#829487";
+    ctx.fillRect(80 - width / 2, p.y, width, Math.max(1, (1 - z) * 3));
+  }
+
+  // Side Obstacles
+  for (let i = 0; i < 7; i++) {
+    let z = ((i / 7) + ((distance * 0.45) % 1)) % 1;
+    drawRoadObject(-1.05, z, i);
+    drawRoadObject(1.05, z, i + 3);
+  }
+}
+
+function drawRoadObject(x, z, type) {
+  const p = project(x, z);
+  let s = 4 + (1 - z) * 13;
+
+  if (type % 3 === 0) ctx.fillStyle = "#e2a34a";
+  if (type % 3 === 1) ctx.fillStyle = "#4e8259";
+  if (type % 3 === 2) ctx.fillStyle = "#bd5261";
+
+  ctx.fillRect(p.x - s / 2, p.y - s, s, s);
+  ctx.fillStyle = "#303e32";
+  ctx.fillRect(p.x - 1, p.y, 2, s * 0.5);
+}
+
+
+function drawEnemy(e) {
+  const p = project(e.x, e.z);
+  const s = 10 * p.scale;
+
+  // Shadow
+  ctx.fillStyle = "#26302c";
+  ctx.fillRect(p.x - s * 0.65, p.y + 2, s * 1.3, s * 0.25);
+
+  // Legs
+  ctx.fillStyle = "#342f54";
+  ctx.fillRect(p.x - s * 0.42, p.y - s * 0.1, s * 0.27, s * 0.65);
+  ctx.fillRect(p.x + s * 0.15, p.y - s * 0.1, s * 0.27, s * 0.65);
+
+  // Body
+  ctx.fillStyle = e.type ? "#b44f4f" : "#6551a2";
+  ctx.fillRect(p.x - s * 0.55, p.y - s, s * 1.1, s);
+
+  // Head & Eyes
+  ctx.fillStyle = "#dfb36f";
+  ctx.fillRect(p.x - s * 0.36, p.y - s * 1.45, s * 0.72, s * 0.5);
+
+  if (s > 4) {
+    ctx.fillStyle = "#25233a";
+    ctx.fillRect(p.x - s * 0.2, p.y - s * 1.3, Math.max(1, s * 0.08), Math.max(1, s * 0.08));
+    ctx.fillRect(p.x + s * 0.12, p.y - s * 1.3, Math.max(1, s * 0.08), Math.max(1, s * 0.08));
+  }
+
+  // Enemy HP Mini bar
+  if (e.hp < e.maxHp) {
+    const barWidth = Math.max(12, s * 1.2);
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(p.x - barWidth / 2, p.y - s * 1.7, barWidth, 2);
+    ctx.fillStyle = "#ffc01e";
+    ctx.fillRect(p.x - barWidth / 2, p.y - s * 1.7, barWidth * Math.max(0, e.hp / e.maxHp), 2);
+  }
+}
+
+
+function drawPlayer() {
+  const x = 80 + playerX * 80;
+  const y = 116;
+
+  // Fluorescent Sky Blue Glow Aura when Critical is ACTIVE
+  if (critState === 'ACTIVE') {
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 255, 255, 0.25)";
+    ctx.beginPath();
+    ctx.arc(x, y - 8, 24 + Math.sin(performance.now() * 0.01) * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "#00ffff";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Shadow
+  ctx.fillStyle = "#26302d";
+  ctx.fillRect(x - 10, y + 12, 20, 4);
+
+  // Legs
+  ctx.fillStyle = "#283b68";
+  ctx.fillRect(x - 7, y + 2, 6, 13);
+  ctx.fillRect(x + 2, y + 2, 6, 13);
+
+  // Body
+  ctx.fillStyle = "#3769b0";
+  ctx.fillRect(x - 9, y - 14, 18, 18);
+
+  // Backpack
+  ctx.fillStyle = "#344d48";
+  ctx.fillRect(x - 6, y - 10, 12, 10);
+
+  // 등에 쌓인 나무 (3열 x 5줄)
+  for (let i = 0; i < wood; i++) {
+    const col = i % 3, row = (i / 3) | 0;
+    const lx = Math.round(x) - 8 + col * 6;
+    const ly = Math.round(y) + 1 - row * 3;
+    ctx.fillStyle = (row + col) % 2 ? "#8a5a2b" : "#a06a35";
+    ctx.fillRect(lx, ly, 5, 2);
+    ctx.fillStyle = "#d9a05b";
+    ctx.fillRect(lx + 4, ly, 1, 2);
+  }
+
+  // Head & Hair
+  ctx.fillStyle = "#d69d62";
+  ctx.fillRect(x - 5, y - 22, 10, 9);
+  ctx.fillStyle = "#3c302b";
+  ctx.fillRect(x - 5, y - 24, 10, 4);
+
+  // Arms
+  ctx.fillStyle = "#d69d62";
+  ctx.fillRect(x - 12, y - 12, 4, 13);
+  ctx.fillRect(x + 8, y - 12, 4, 13);
+
+  // Gun (Glows Fluorescent Sky Blue #00FFFF during Critical)
+  if (critState === 'ACTIVE') {
+    ctx.fillStyle = "#00ffff"; // Neon Cyan Glow Color
+    ctx.shadowColor = "#00ffff";
+    ctx.shadowBlur = 8;
+  } else {
+    ctx.fillStyle = "#28302e";
+    ctx.shadowBlur = 0;
+  }
+
+  // Rifle Structure
+  ctx.fillRect(x + 5, y - 13, 3, 12);
+  ctx.fillRect(x + 5, y - 17, 3, 8);
+  ctx.shadowBlur = 0; // Reset shadow blur
+
+  // Muzzle Flash
+  if (flash > 0) {
+    ctx.fillStyle = critState === 'ACTIVE' ? "#e0ffff" : "#fff080";
+    ctx.fillRect(x + 3, y - 25, 7, 7);
+
+    ctx.fillStyle = critState === 'ACTIVE' ? "#00ffff" : "#f5a442";
+    ctx.fillRect(x + 5, y - 28, 3, 12);
+  }
+}
+
+
+function drawBullets() {
+  bullets.forEach(b => {
+    const p = project(b.x, b.z);
+    const s = 1 + (1 - b.z) * 3;
+
+    if (b.isCrit) {
+      ctx.fillStyle = "#00ffff";
+      ctx.fillRect(p.x - s, p.y - s * 1.5, s * 2, s * 3);
+    } else {
+      ctx.fillStyle = b.type === 'sg' ? "#ffa500" : "#fff391";
+      ctx.fillRect(p.x - s / 2, p.y - s, s, s * 2);
+    }
+  });
+
+  particles.forEach(p => {
+    const px = Math.round(p.x), py = Math.round(p.y);
+    if (p.kind === 0) drawCoin(px, py, p.life);
+    else drawLolly(px, py);
+  });
+
+  // Floating text rendering
+  floatTexts.forEach(ft => {
+    ctx.font = "bold 8px monospace";
+    ctx.fillStyle = ft.color;
+    ctx.fillText(ft.text, ft.x, ft.y);
+  });
+}
+
+
+function drawHUD() {
+  ctx.fillStyle = "#162e38";
+  ctx.fillRect(0, 0, 160, 12);
+
+  ctx.font = "bold 6px monospace";
+
+  // HP Label
+  ctx.fillStyle = "#e7edb0";
+  ctx.fillText("HP:" + Math.ceil(hp), 3, 8);
+
+  // Score
+  ctx.fillText("SCORE:" + score, 48, 8);
+
+  // Critical State HUD Display
+  if (critState === 'ACTIVE') {
+    ctx.fillStyle = "#00ffff";
+    ctx.fillText("CRIT 3X! (" + critTimer.toFixed(1) + "s)", 98, 8);
+  } else if (critState === 'COOLDOWN') {
+    ctx.fillStyle = "#ff7777";
+    ctx.fillText("CRIT CD (" + critTimer.toFixed(1) + "s)", 102, 8);
+  } else {
+    ctx.fillStyle = "#77ff77";
+    ctx.fillText("CRIT: READY", 102, 8);
+  }
+
+  // HP Bar Outer Frame
+  ctx.fillStyle = "#331a28";
+  ctx.fillRect(3, 13, 42, 4);
+
+  // HP Bar Fill
+  ctx.fillStyle = hp > 30 ? "#5be65b" : "#ff4444";
+  ctx.fillRect(4, 14, (hp / 100) * 40, 2);
+
+  // 나무 / 집 현황
+  ctx.fillStyle = "rgba(22,46,56,0.85)";
+  ctx.fillRect(48, 12, 80, 7);
+  ctx.fillStyle = "#d9a05b";
+  ctx.font = "bold 6px monospace";
+  ctx.fillText("WOOD " + wood + "/" + MAX_WOOD, 50, 18);
+  ctx.fillStyle = "#ffd93b";
+  ctx.fillText("HOME " + houseCount, 100, 18);
+
+  // Auto-Heal Notice Banner if active
+  if (enemies.length === 0 && !gameOver) {
+    ctx.fillStyle = "#00ffff";
+    ctx.font = "bold 6px monospace";
+    ctx.fillText("SECURE - FULL HP AUTO-HEALED", 30, 23);
+  }
+}
+
+function drawGameOver() {
+  if (!gameOver) return;
+
+  ctx.fillStyle = "rgba(15, 20, 32, 0.88)";
+  ctx.fillRect(0, 0, 160, 144);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ff4444";
+  ctx.font = "bold 13px monospace";
+  ctx.fillText("MISSION FAILED", 80, 60);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "8px monospace";
+  ctx.fillText("FINAL SCORE: " + score, 80, 78);
+
+  ctx.fillStyle = "#00ffff";
+  ctx.font = "7px monospace";
+  ctx.fillText("PRESS R OR TAP TO RETRY", 80, 96);
+
+  ctx.textAlign = "left";
+}
+
+
+// 귀여운 노랑 집 (약간 3D: 정면 + 옆면 + 지붕 양면)
+function drawHouse(x, by) {
+  x = Math.round(x);
+  ctx.fillStyle = "rgba(20,30,25,0.45)";            // 그림자
+  ctx.fillRect(x - 8, by - 1, 17, 3);
+  ctx.fillStyle = "#ffd93b";                        // 정면 벽
+  ctx.fillRect(x - 6, by - 8, 8, 8);
+  ctx.fillStyle = "#d9a21c";                        // 옆면 벽 (어둡게)
+  ctx.fillRect(x + 2, by - 9, 5, 8);
+  ctx.fillStyle = "#8a5a2b";                        // 굴뚝
+  ctx.fillRect(x + 2, by - 17, 2, 4);
+  ctx.fillStyle = "#e0523f";                        // 지붕 정면
+  ctx.beginPath();
+  ctx.moveTo(x - 7, by - 8); ctx.lineTo(x + 3, by - 8); ctx.lineTo(x - 2, by - 15);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#a63227";                        // 지붕 옆면
+  ctx.beginPath();
+  ctx.moveTo(x - 2, by - 15); ctx.lineTo(x + 3, by - 8);
+  ctx.lineTo(x + 8, by - 9); ctx.lineTo(x + 3, by - 16);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#8a5a2b";                        // 문
+  ctx.fillRect(x - 5, by - 4, 2, 4);
+  ctx.fillStyle = "#8be3ff";                        // 창문
+  ctx.fillRect(x - 1, by - 6, 2, 2);
+  ctx.fillRect(x + 4, by - 6, 2, 2);
+}
+
+function drawHouses() {
+  // 완성된 집
+  houses.forEach(h => { if (h) drawHouse(h.x, HOUSE_Y); });
+
+  // 짓는 중인 나무 더미
+  if (groundLogs > 0) {
+    const sx = 80 + HOUSE_SLOTS[nextSlot()];
+    for (let i = 0; i < groundLogs; i++) {
+      const col = i % 5, row = (i / 5) | 0;
+      ctx.fillStyle = i % 2 ? "#8a5a2b" : "#a06a35";
+      ctx.fillRect(sx - 8 + col * 3, HOUSE_Y - 2 - row * 2, 3, 2);
+    }
+  }
+
+  // 날아가는 나무
+  ctx.fillStyle = "#a06a35";
+  logAnims.forEach(a => {
+    const t = Math.min(1, a.t);
+    const lx = a.x0 + (a.x1 - a.x0) * t;
+    const ly = a.y0 + (a.y1 - a.y0) * t - Math.sin(Math.PI * t) * 14;
+    ctx.fillRect(Math.round(lx) - 2, Math.round(ly), 4, 2);
+  });
+}
+
+// 채집/건설 진행 막대
+function drawGatherBar() {
+  const x = Math.round(80 + playerX * 80), y = 116;
+  let ratio = 0, color = null;
+  if (Math.abs(playerX) >= EDGE_X && wood < MAX_WOOD) { ratio = chopTimer / CHOP_TIME; color = "#7bd35b"; }
+  else if (Math.abs(playerX) <= CENTER_X && wood > 0) { ratio = dropTimer / DROP_TIME; color = "#ffd93b"; }
+  if (!color) return;
+  ctx.fillStyle = "#162e38";
+  ctx.fillRect(x - 9, y - 35, 18, 4);
+  ctx.fillStyle = color;
+  ctx.fillRect(x - 8, y - 34, 16 * Math.min(1, ratio), 2);
+}
+
+function render() {
+  ctx.save();
+
+  if (shake > 0) {
+    ctx.translate(Math.random() * 4 - 2, Math.random() * 4 - 2);
+  }
+
+  drawWorld();
+
+  enemies
+    .slice()
+    .sort((a, b) => b.z - a.z)
+    .forEach(drawEnemy);
+
+  drawHouses();
+  drawBullets();
+  drawPlayer();
+  drawGatherBar();
+  drawHUD();
+
+  ctx.restore();
+
+  // Subtle Game Boy pixel grid effect
+  ctx.fillStyle = "rgba(0,0,0,0.04)";
+  for (let y = 0; y < 144; y += 2) {
+    ctx.fillRect(0, y, 160, 1);
+  }
+
+  drawGameOver();
+}
+
+function loop() {
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+
+// Global Retry Tap on canvas for mobile
+canvas.addEventListener("click", () => {
+  if (gameOver) resetGame();
+});
+
+// Start loop
+loop();
+</script>
+</body>
+</html>
