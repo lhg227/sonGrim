@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>작은 3D 마을 산책 & 붐박스</title>
+<style>
+    html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #b9d7e8;
+        font-family: "Malgun Gothic", sans-serif;
+    }
+    canvas {
+        display: block;
+        touch-action: none; /* 캔버스 기본 터치 스크롤 방지 */
+    }
+    #ui {
+        position: fixed;
+        left: 16px;
+        top: 16px;
+        color: #24382f;
+        background: #fff8e6dd;
+        border: 1px solid #667c68;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 14px;
+        line-height: 1.65;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        user-select: none;
+        pointer-events: none; /* UI 클릭 통과 */
+    }
+    #ui b {
+        font-size: 16px;
+        color: #1a2b24;
+    }
+    .small {
+        font-size: 12px;
+        color: #617065;
+    }
+    .highlight {
+        color: #ff3366;
+        font-weight: bold;
+    }
+    
+    /* 모바일용 가상 조이스틱 버튼 */
+    #touch {
+        position: fixed;
+        left: 20px;
+        bottom: 20px;
+        width: 150px;
+        height: 150px;
+        display: none;
+        user-select: none;
+        touch-action: none;
+        z-index: 10;
+    }
+    #touch button {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        border: 0;
+        border-radius: 14px;
+        background: rgba(41, 72, 59, 0.85);
+        color: #fff;
+        font-size: 22px;
+        box-shadow: 0 4px 0 #163027;
+        cursor: pointer;
+        transition: transform 0.1s, box-shadow 0.1s;
+    }
+    #touch button:active {
+        transform: translateY(4px);
+        box-shadow: 0 0 0 #163027;
+    }
+    #up { left: 50px; top: 0; }
+    #left { left: 0; top: 50px; }
+    #right { right: 0; top: 50px; }
+    #down { left: 50px; bottom: 0; }
+    
+    /* 터치 가능 기기에서만 컨트롤러 표시 */
+    @media(pointer: coarse) {
+        #touch { display: block; }
+    }
+</style>
+</head>
+<body>
+<div id="ui">
+    <b>작은 3D 마을 산책</b><br>
+    WASD / 방향키 · <b>이동</b><br>
+    화면 클릭 · <span class="highlight">음악 총알 발사!</span><br>
+    <span class="small">캐릭터 뒤를 카메라가 따라갑니다.</span>
+</div>
+<div id="touch">
+    <button id="up">▲</button>
+    <button id="left">◀</button>
+    <button id="right">▶</button>
+    <button id="down">▼</button>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+// 기본 씬 및 카메라 설정
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xb8d9eb);
+scene.fog = new THREE.Fog(0xb8d9eb, 45, 105);
+
+const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 180);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+// 조명 설정
+const hemi = new THREE.HemisphereLight(0xfff4d6, 0x55705a, 2.2);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xffe5b5, 3.2);
+sun.position.set(-18, 28, 14);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.camera.left = -45;
+sun.shadow.camera.right = 45;
+sun.shadow.camera.top = 45;
+sun.shadow.camera.bottom = -45;
+scene.add(sun);
+
+// 유틸리티 함수: 재질 및 큐브 생성
+function mat(color) { 
+    return new THREE.MeshStandardMaterial({ color, roughness: 0.88 }); 
+}
+function box(w, h, d, color, x, y, z, shadow = true) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
+    m.position.set(x, y, z);
+    m.castShadow = shadow;
+    m.receiveShadow = true;
+    scene.add(m);
+    return m;
+}
+
+// 1. 땅과 길
+box(90, 0.5, 90, 0x82a969, 0, -0.25, 0, false);
+box(8, 0.08, 90, 0xc7b789, 0, 0.04, 0, false);
+box(90, 0.08, 7, 0xc7b789, 0, 0.045, 7, false);
+for (let z = -40; z < 42; z += 5) {
+    box(0.14, 0.03, 2.1, 0xe8dcae, 0, 0.1, z, false);
+}
+
+// 2. 작은 집
+const house = new THREE.Group();
+const wall = box(10, 5.4, 8, 0xf0d49b, -12, 2.7, -7); 
+house.add(wall);
+const roof = new THREE.Mesh(new THREE.ConeGeometry(7.2, 3.3, 4), mat(0xa95645));
+roof.rotation.y = Math.PI / 4;
+roof.position.set(-12, 6.7, -7);
+roof.castShadow = true;
+roof.receiveShadow = true;
+scene.add(roof);
+house.add(roof);
+box(2.1, 3.3, 0.25, 0x76503b, -12, 1.65, -2.88); // 문
+box(2.1, 1.65, 0.22, 0x9ed0d8, -15.1, 3.25, -2.86); // 창문1
+box(2.1, 1.65, 0.22, 0x9ed0d8, -8.9, 3.25, -2.86); // 창문2
+box(1.1, 2.6, 1.1, 0x7e5a49, -15.2, 7.1, -7.8); // 굴뚝
+
+// 3. 울타리
+for (let x = -21; x <= -3; x += 2) {
+    box(0.18, 1.1, 0.18, 0xd8c99b, x, 0.55, -13);
+    box(0.18, 1.1, 0.18, 0xd8c99b, x, 0.55, -1);
+}
+for (let z = -13; z <= -1; z += 2) {
+    box(0.18, 1.1, 0.18, 0xd8c99b, -21, 0.55, z);
+}
+box(18, 0.14, 0.14, 0xd8c99b, -12, 0.72, -13);
+box(18, 0.14, 0.14, 0xd8c99b, -12, 0.72, -1);
+box(0.14, 0.14, 12, 0xd8c99b, -21, 0.72, -7);
+
+// 4. 나무
+function tree(x, z, s = 1) {
+    const g = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35 * s, 0.48 * s, 3.2 * s, 7), mat(0x79543d));
+    trunk.position.y = 1.6 * s;
+    trunk.castShadow = true;
+    g.add(trunk);
+    const crowns = [
+        [0, 4, 0, 1.8], [-0.9, 3.7, 0.2, 1.25], 
+        [0.9, 3.8, 0.1, 1.3], [0, 3.8, -0.8, 1.25]
+    ];
+    for (const [dx, dy, dz, sc] of crowns) {
+        const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(sc * s, 1), mat(0x4f8050));
+        crown.position.set(dx * s, dy * s, dz * s);
+        crown.castShadow = true;
+        g.add(crown);
+    }
+    g.position.set(x, 0, z);
+    scene.add(g);
+}
+[
+    [-27, -20, 1.1], [-23, 17, 0.9], [17, -20, 1.15], 
+    [25, -5, 0.8], [20, 20, 1.05], [-29, 30, 0.95], [31, 29, 1]
+].forEach(v => tree(...v));
+
+// 5. 꽃/덤불
+for (let i = 0; i < 26; i++) {
+    const a = i * 2.4;
+    const x = -16 + Math.sin(a) * 6 + Math.sin(i) * 2;
+    const z = -7 + Math.cos(a * 0.8) * 6;
+    const bush = new THREE.Mesh(new THREE.SphereGeometry(0.32 + (i % 3) * 0.08, 7, 5), mat(i % 4 === 0 ? 0xe4c35e : 0x5c8f55));
+    bush.position.set(x, 0.28, z);
+    bush.castShadow = true;
+    scene.add(bush);
+}
+
+// 블록형 3인칭 캐릭터
+const player = new THREE.Group();
+function limb(w, h, d, c, x, y, z) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c));
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    player.add(m);
+    return m;
+}
+const torso = limb(1.35, 1.75, 0.75, 0x4e79a7, 0, 2.35, 0);
+const head = limb(1.05, 1.05, 1.0, 0xf0c49b, 0, 3.75, 0);
+const hair = limb(1.09, 0.28, 1.04, 0x443b35, 0, 4.27, -0.01);
+const armL = limb(0.42, 1.55, 0.5, 0xf0c49b, -0.9, 2.35, 0);
+const armR = limb(0.42, 1.55, 0.5, 0xf0c49b, 0.9, 2.35, 0);
+const legL = limb(0.5, 1.55, 0.6, 0x35485b, -0.38, 0.72, 0);
+const legR = limb(0.5, 1.55, 0.6, 0x35485b, 0.38, 0.72, 0);
+player.position.set(7, 0, 13);
+scene.add(player);
+
+// --- 붐박스 추가 ---
+const boombox = new THREE.Group();
+const bbBody = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.4), mat(0xff5588));
+bbBody.castShadow = true;
+boombox.add(bbBody);
+
+const spkMat = mat(0x222222);
+const spkGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.42, 16);
+const spk1 = new THREE.Mesh(spkGeo, spkMat);
+spk1.rotation.x = Math.PI / 2; 
+spk1.position.set(-0.25, 0, 0); 
+boombox.add(spk1);
+
+const spk2 = new THREE.Mesh(spkGeo, spkMat);
+spk2.rotation.x = Math.PI / 2;
+spk2.position.set(0.25, 0, 0); 
+boombox.add(spk2);
+
+const handleTop = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 0.1), mat(0xdddddd));
+handleTop.position.set(0, 0.4, 0); 
+boombox.add(handleTop);
+const handleL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 0.1), mat(0xdddddd));
+handleL.position.set(-0.31, 0.3, 0); 
+boombox.add(handleL);
+const handleR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 0.1), mat(0xdddddd));
+handleR.position.set(0.31, 0.3, 0); 
+boombox.add(handleR);
+
+// 캐릭터 오른쪽 어깨/등 부근에 장착
+boombox.position.set(1.1, 2.9, -0.2);
+boombox.rotation.y = -Math.PI / 8;
+boombox.rotation.z = Math.PI / 12;
+player.add(boombox);
+
+// --- 음표 총알 시스템 ---
+const bullets = [];
+
+// 총알 도형 재사용 (성능 최적화)
+const noteGeoSphere = new THREE.SphereGeometry(0.25, 12, 12);
+const noteGeoStem = new THREE.CylinderGeometry(0.05, 0.05, 0.7);
+const noteGeoFlag = new THREE.BoxGeometry(0.35, 0.1, 0.06);
+
+function createNote() {
+    const note = new THREE.Group();
+    const colors = [0xff3366, 0x33ff66, 0x3366ff, 0xffff33, 0xff33ff, 0x33ffff];
+    const c = colors[Math.floor(Math.random() * colors.length)];
+    
+    // 발광(Emissive) 재질 적용으로 귀엽게 빛남
+    const m = new THREE.MeshStandardMaterial({
+        color: c, 
+        emissive: c, 
+        emissiveIntensity: 0.8, 
+        roughness: 0.2
+    });
+    
+    // 음표 머리
+    const head = new THREE.Mesh(noteGeoSphere, m);
+    head.scale.set(1.2, 0.8, 0.6); 
+    head.rotation.z = -0.3; 
+    head.position.set(-0.15, 0, 0);
+    head.castShadow = true; 
+    note.add(head);
+    
+    // 음표 기둥
+    const stem = new THREE.Mesh(noteGeoStem, m);
+    stem.position.set(0.12, 0.35, 0); 
+    stem.castShadow = true; 
+    note.add(stem);
+    
+    // 음표 꼬리
+    const flag = new THREE.Mesh(noteGeoFlag, m);
+    flag.position.set(0.25, 0.65, 0); 
+    flag.rotation.z = -0.4; 
+    flag.castShadow = true; 
+    note.add(flag);
+    
+    note.scale.set(0.5, 0.5, 0.5);
+    return note;
+}
+
+// 화면 클릭 시 발사 이벤트
+renderer.domElement.addEventListener('pointerdown', (e) => {
+    // 터치 UI나 텍스트 UI 클릭 시 무시
+    if(e.target.closest('#touch') || e.target.closest('#ui')) return;
+    
+    const bullet = createNote();
+    
+    // 붐박스의 현재 월드 좌표를 총알 시작 위치로 가져옴
+    const spawnPos = new THREE.Vector3();
+    boombox.getWorldPosition(spawnPos);
+    bullet.position.copy(spawnPos);
+    
+    // 캐릭터가 바라보는 방향 (회전값 y를 사용)
+    const dir = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).normalize();
+    
+    bullet.userData = { dir: dir, life: 0 };
+    scene.add(bullet);
+    bullets.push(bullet);
+    
+    // 붐박스 발사 반동 애니메이션 (순간적으로 커짐)
+    boombox.scale.set(1.5, 1.5, 1.5);
+});
+
+// 충돌용 단순 원형 장애물 리스트: 집 + 나무
+const obstacles = [
+    {x: -12, z: -7, r: 7.3}, 
+    [-27, -20, 2], [-23, 17, 1.8], [17, -20, 2.1], 
+    [25, -5, 1.6], [20, 20, 2], [-29, 30, 1.8], [31, 29, 2]
+].map(o => Array.isArray(o) ? { x: o[0], z: o[1], r: o[2] } : o);
+
+function canMove(x, z) {
+    if (Math.abs(x) > 42 || Math.abs(z) > 42) return false;
+    return !obstacles.some(o => Math.hypot(x - o.x, z - o.z) < o.r);
+}
+
+// 키보드 및 터치 입력 처리
+const keys = {};
+addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+    }
+});
+addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+[['up', 'w'], ['down', 's'], ['left', 'a'], ['right', 'd']].forEach(([id, k]) => {
+    const b = document.getElementById(id);
+    if (!b) return;
+    const on = e => { e.preventDefault(); keys[k] = true; };
+    const off = e => { e.preventDefault(); keys[k] = false; };
+    b.addEventListener('pointerdown', on);
+    b.addEventListener('pointerup', off);
+    b.addEventListener('pointercancel', off);
+    b.addEventListener('pointerleave', off);
+});
+
+const clock = new THREE.Clock();
+let walk = 0;
+const camTarget = new THREE.Vector3();
+const desiredCam = new THREE.Vector3();
+const boomboxBaseScale = new THREE.Vector3(1, 1, 1);
+
+function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.04);
+    const time = clock.getElapsedTime();
+    
+    // 1. 붐박스 애니메이션
+    // 음악 비트에 맞춰 스피커가 통통 튀는 효과 (Pulse)
+    const pulse = 1 + Math.sin(time * 12) * 0.15;
+    spk1.scale.set(pulse, 1, pulse);
+    spk2.scale.set(pulse, 1, pulse);
+    // 발사 후 반동 스케일 부드럽게 원래대로 복구
+    boombox.scale.lerp(boomboxBaseScale, dt * 10);
+
+    // 2. 총알 업데이트 로직
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        let b = bullets[i];
+        // 앞으로 이동
+        b.position.addScaledVector(b.userData.dir, dt * 18);
+        b.userData.life += dt;
+        
+        // 날아가면서 빙글빙글 회전
+        b.rotation.y += dt * 8;
+        b.rotation.z += dt * 4;
+        
+        // 2초 수명이 다하면 씬에서 제거
+        if (b.userData.life > 2.0) {
+            scene.remove(b);
+            // 메모리 최적화를 위해 재질 등을 지워주면 좋지만 간단한 구현을 위해 생략
+            bullets.splice(i, 1);
+        }
+    }
+
+    // 3. 플레이어 이동 및 걷기 애니메이션
+    let x = 0, z = 0;
+    if (keys.w || keys.arrowup) z -= 1;
+    if (keys.s || keys.arrowdown) z += 1;
+    if (keys.a || keys.arrowleft) x -= 1;
+    if (keys.d || keys.arrowright) x += 1;
+    
+    const moving = x || z;
+    if (moving) {
+        const len = Math.hypot(x, z);
+        x /= len; 
+        z /= len;
+        
+        const speed = 6.2;
+        const nx = player.position.x + x * speed * dt;
+        const nz = player.position.z + z * speed * dt;
+        
+        if (canMove(nx, player.position.z)) player.position.x = nx;
+        if (canMove(player.position.x, nz)) player.position.z = nz;
+        
+        // 부드러운 방향 회전
+        const targetRot = Math.atan2(x, z);
+        let diff = ((targetRot - player.rotation.y + Math.PI) % (Math.PI * 2)) - Math.PI;
+        player.rotation.y += diff * Math.min(1, dt * 12);
+        
+        // 걷기 모션
+        walk += dt * 10;
+        armL.rotation.x = Math.sin(walk) * 0.65;
+        armR.rotation.x = -Math.sin(walk) * 0.65;
+        legL.rotation.x = -Math.sin(walk) * 0.55;
+        legR.rotation.x = Math.sin(walk) * 0.55;
+    } else {
+        // 멈췄을 때 서서히 제자리로
+        armL.rotation.x *= 0.8;
+        armR.rotation.x *= 0.8;
+        legL.rotation.x *= 0.8;
+        legR.rotation.x *= 0.8;
+    }
+    
+    // 4. 카메라 부드러운 추적
+    const back = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y));
+    desiredCam.copy(player.position).addScaledVector(back, -8.5);
+    desiredCam.y = 6.5;
+    camera.position.lerp(desiredCam, 1 - Math.pow(0.001, dt));
+    
+    camTarget.copy(player.position);
+    camTarget.y = 2.2;
+    camera.lookAt(camTarget);
+    
+    renderer.render(scene, camera);
+}
+
+animate();
+
+// 리사이즈 대응
+addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
