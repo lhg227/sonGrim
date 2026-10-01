@@ -1,0 +1,181 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>건물부수기풍 v2</title>
+<style>
+html,body{margin:0;height:100%;background:#171922;overflow:hidden;font-family:monospace}
+body{display:grid;place-items:center}.box{position:relative;width:min(96vw,900px);aspect-ratio:4/3}
+canvas{width:100%;height:100%;display:block;image-rendering:pixelated;background:#8ed2f1;box-shadow:0 10px 50px #0009}
+.help{position:absolute;left:10px;bottom:8px;color:#fff;text-shadow:2px 2px #000;font-size:13px;pointer-events:none}
+.btn{position:absolute;width:58px;height:58px;border:2px solid #fff9;border-radius:14px;background:#1119;color:#fff;
+display:grid;place-items:center;font:bold 22px sans-serif;touch-action:none;user-select:none}
+#l{left:14px;bottom:48px}#r{left:82px;bottom:48px}#u{left:48px;bottom:114px}#d{left:48px;bottom:-18px}
+#z{right:84px;bottom:54px;background:#b52b39bb}#x{right:16px;bottom:94px;background:#315ebbbb}
+@media(hover:hover) and (pointer:fine){.btn{opacity:.22}}
+</style></head><body><div class="box"><canvas id="c" width="640" height="480"></canvas>
+<div class="help">← → 이동　↑ 초고점프　↓ 받아내기　Z 위로 베기　X 필살기　R 재시작</div>
+<div id="l" class="btn">←</div><div id="r" class="btn">→</div><div id="u" class="btn">↑</div><div id="d" class="btn">↓</div>
+<div id="z" class="btn">Z</div><div id="x" class="btn">X</div></div>
+<script>
+(()=>{
+const c=document.querySelector('#c'),g=c.getContext('2d');g.imageSmoothingEnabled=false;
+const W=640,H=480,FLOOR=430,K={},P={};
+onkeydown=e=>{let k=e.key.toLowerCase();if(!K[k])P[k]=1;K[k]=1;if(k.startsWith('arrow'))e.preventDefault()};
+onkeyup=e=>K[e.key.toLowerCase()]=0;
+function bind(id,k){let q=document.querySelector(id);q.onpointerdown=e=>{e.preventDefault();if(!K[k])P[k]=1;K[k]=1;q.setPointerCapture(e.pointerId)};
+q.onpointerup=q.onpointercancel=e=>{e.preventDefault();K[k]=0}}
+bind('#l','arrowleft');bind('#r','arrowright');bind('#u','arrowup');bind('#d','arrowdown');bind('#z','z');bind('#x','x');
+
+let hero,building,parts,txt,score,combo,sp,level,shake,over,spawnDelay;
+function reset(){
+ hero={x:309,y:FLOOR-40,w:22,h:40,vy:0,on:1,atk:0,guard:0,hp:3,hitLock:0};
+ building=null;parts=[];txt=[];score=0;combo=0;sp=0;level=1;shake=0;over=0;spawnDelay=15;
+}
+reset();
+function newBuilding(){
+ let cols=3, rows=Math.min(5+Math.floor(level/2),11),bw=72,bh=29,width=cols*bw;
+ let x=(W-width)/2+(Math.random()-.5)*70;
+ building={x,width,cols,rows,bw,bh,vy:.65+level*.07,blocks:[],rowHP:[],rowMax:[],bottom:45};
+ for(let r=0;r<rows;r++){
+   // One shared durability value per horizontal floor.
+   let rhp=Math.min(8,3+Math.floor(level/2)+Math.floor(Math.random()*2));
+   building.rowHP[r]=rhp; building.rowMax[r]=rhp;
+   for(let q=0;q<cols;q++) building.blocks.push({r,q,hp:1,max:1,dead:0,hits:0});
+ }
+ level++;
+}
+function active(){return building?building.blocks.filter(b=>!b.dead):[]}
+function bounds(){
+ if(!building)return [245,395];
+ let alive=active(); if(!alive.length)return [building.x,building.x+building.width];
+ return [building.x+4,building.x+building.width-hero.w-4];
+}
+function blockXY(b){
+ // r=0 is bottom floor
+ return {x:building.x+b.q*building.bw,y:building.bottom-(b.r+1)*building.bh};
+}
+function burst(x,y,n=10){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*6,vy:-Math.random()*5-1,l:35+Math.random()*20,s:2+Math.random()*5})}
+function label(x,y,t){txt.push({x,y,t,l:45})}
+function destroy(b){
+ if(b.dead)return;b.dead=1;score+=100+combo*20;combo++;sp=Math.min(100,sp+8);
+ let a=blockXY(b);burst(a.x+building.bw/2,a.y+building.bh/2,12);shake=5;
+}
+function attack(){
+ if(!building)return;
+ let alive=active(); if(!alive.length)return;
+ // Progress is horizontal-floor based, never vertical-column based.
+ // Only the lowest surviving floor can be damaged.
+ let targetRow=Math.min(...alive.map(b=>b.r));
+ let row=alive.filter(b=>b.r===targetRow);
+ let cx=hero.x+hero.w/2;
+ // The visible column struck gets a crack, but damage belongs to the whole floor.
+ let struck=row.find(b=>{let a=blockXY(b);return cx>a.x-12&&cx<a.x+building.bw+12});
+ if(!struck)return;
+ struck.hits++;
+ building.rowHP[targetRow]--;
+ let a=blockXY(struck); burst(cx,a.y+building.bh/2,5); shake=3;
+ if(building.rowHP[targetRow]<=0){
+   // Whole horizontal floor collapses together.
+   for(let b of row) destroy(b);
+   label(building.x+building.width/2,a.y,'FLOOR BREAK!');
+ }
+}
+function bottomY(){
+ let ys=active().map(b=>blockXY(b).y+building.bh);return ys.length?Math.max(...ys):-999;
+}
+function update(){
+ if(P.r){reset();P.r=0}
+ if(over){if(P.z){reset();P.z=0}return}
+ if(!building){if(--spawnDelay<=0)newBuilding()}
+ hero.guard=!!K.arrowdown;
+ let mv=(K.arrowright?1:0)-(K.arrowleft?1:0);hero.x+=mv*(hero.guard?1.4:3.2);
+ let [lo,hi]=bounds();hero.x=Math.max(lo,Math.min(hi,hero.x));
+ if(P.arrowup&&hero.on){hero.vy=-15.2;hero.on=0}P.arrowup=0; // reaches near top
+ hero.vy+=.38;hero.y+=hero.vy;
+ if(hero.y+hero.h>=FLOOR){hero.y=FLOOR-hero.h;hero.vy=0;hero.on=1}
+ if(hero.atk>0)hero.atk--;
+ if(P.z&&hero.atk<=0){hero.atk=15;attack()}P.z=0;
+ if(P.x&&sp>=100&&building){
+   sp=0; shake=18;
+   label(W/2,150,'SPECIAL!');
+   // Special destroys the ENTIRE currently visible building.
+   let all=[...active()];
+   for(let b of all) destroy(b);
+ }P.x=0;
+
+ if(building){
+   // Building gravity: after a guard-bounce it rises briefly, slows, reaches an apex,
+   // then accelerates downward again.
+   building.vy += 0.075 + Math.min(level * 0.002, 0.025);
+   building.vy = Math.min(building.vy, 4.2 + level * 0.08);
+   building.bottom+=building.vy;
+   let by=bottomY(), head=hero.y;
+   let overlapX=hero.x+hero.w>building.x && hero.x<building.x+building.width;
+   if(hero.hitLock>0) hero.hitLock--;
+   if(overlapX && by>=head){
+     // The building can never pass through the player's head.
+     building.bottom -= (by-head);
+     if(hero.guard){
+       // Parry/bounce: launch it only a little higher than the character.
+       building.vy = -3.35;
+       hero.hitLock=18;
+       shake=4;
+     } else {
+       // Contact itself is harmless while airborne.
+       // HP is lost ONLY when the player is standing on the ground
+       // and fails to parry a building resting on their head.
+       building.vy=0;
+       if(hero.on && hero.hitLock<=0){
+         hero.hp--;
+         hero.hitLock=45;
+         shake=9;
+         label(hero.x+hero.w/2,hero.y-12,'HP -1');
+         if(hero.hp<=0){
+           over=1;
+           label(W/2,220,'GAME OVER');
+         }
+       }
+     }
+   }
+   if(active().length===0){building=null;spawnDelay=55;score+=1000;combo=0}
+ }
+ for(let q of parts){q.x+=q.vx;q.y+=q.vy;q.vy+=.25;q.l--}parts=parts.filter(q=>q.l>0);
+ for(let t of txt){t.y-=.5;t.l--}txt=txt.filter(t=>t.l>0);
+}
+function R(x,y,w,h,col){g.fillStyle=col;g.fillRect(x|0,y|0,w|0,h|0)}
+function draw(){
+ let dx=shake?(Math.random()-.5)*shake:0,dy=shake?(Math.random()-.5)*shake:0;shake*=.8;if(shake<.2)shake=0;
+ g.save();g.translate(dx,dy);R(0,0,W,H,'#8fd1ef');
+ // skyline
+ R(0,310,W,120,'#c9d8da');for(let i=0;i<13;i++){let x=i*52,h=35+(i%4)*18;R(x,310-h,43,h,'#91a7ac');
+ for(let yy=8;yy<h-5;yy+=14)for(let xx=6;xx<38;xx+=13)R(x+xx,310-h+yy,6,7,'#dfe7b1')}
+ R(0,FLOOR,W,H-FLOOR,'#565a60');R(0,FLOOR,W,5,'#f3e6a6');
+ if(building)for(let b of active()){let a=blockXY(b), base=b.max>=3?'#a9564a':b.max==2?'#c17a55':'#d6b06b';
+   R(a.x+1,a.y+1,building.bw-2,building.bh-2,base);R(a.x+5,a.y+5,building.bw-10,building.bh-9,'#e0bd7a');
+   for(let k=0;k<4;k++)R(a.x+8+k*15,a.y+8,9,10,'#426372');
+   R(a.x,a.y+building.bh-3,building.bw,3,'#4c3c36');
+   if(b.hits>0){R(a.x+building.bw/2,a.y+2,2,building.bh-5,'#513b36'); if(b.hits>1)R(a.x+10,a.y+building.bh/2,building.bw-20,2,'#513b36')}
+ }
+ // player
+ let x=hero.x,y=hero.y;R(x+4,y+27,6,13,'#263342');R(x+14,y+27,6,13,'#263342');R(x+3,y+13,18,17,'#28517c');
+ R(x+6,y+2,14,13,'#f0c49d');R(x+5,y,16,5,'#3d2d28');R(x+16,y+7,2,2,'#111');
+ if(hero.guard){R(x-5,y-5,32,4,'#e8eef2');R(x-2,y-3,26,3,'#657783')}
+ if(hero.atk>0){
+   // huge upward sword arc
+   g.strokeStyle='#fffbe4';g.lineWidth=7;g.beginPath();g.arc(x+11,y+8,66,Math.PI*1.08,Math.PI*1.88);g.stroke();
+   g.strokeStyle='#fff8';g.lineWidth=3;g.beginPath();g.arc(x+11,y+8,77,Math.PI*1.1,Math.PI*1.9);g.stroke();
+ }
+ for(let q of parts)R(q.x,q.y,q.s,q.s,q.l%2?'#f5dfae':'#555');
+ for(let t of txt){g.font='bold 17px monospace';g.textAlign='center';g.strokeStyle='#111';g.lineWidth=4;g.strokeText(t.t,t.x,t.y);g.fillStyle='#fff';g.fillText(t.t,t.x,t.y)}
+ g.restore();
+ // hud
+ R(8,8,624,48,'#10151dcc');g.fillStyle='#fff';g.textAlign='left';g.font='bold 16px monospace';g.fillText('SCORE '+String(score).padStart(7,'0'),20,29);
+ g.fillText('SP',390,29);R(420,17,190,12,'#303844');R(420,17,190*sp/100,12,'#f2c84b');g.font='12px monospace';g.fillText('STAGE '+level,20,48);
+ g.font='bold 16px monospace';g.fillText('HP',245,29);
+ for(let i=0;i<3;i++)R(278+i*22,17,15,13,i<hero.hp?'#e84b4b':'#452f35');
+ if(combo>1){g.textAlign='right';g.font='bold 18px monospace';g.fillText(combo+' COMBO',610,48)}
+ if(over){R(115,160,410,140,'#101018df');g.textAlign='center';g.fillStyle='#fff';g.font='bold 32px monospace';g.fillText('GAME OVER',320,215);
+ g.font='16px monospace';g.fillText('Z 또는 R : 다시 시작',320,258)}
+}
+function loop(){update();draw();for(let k in P)P[k]=0;requestAnimationFrame(loop)}loop();
+})();
+</script></body></html>
