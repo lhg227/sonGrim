@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>높게, 또는 낮게 점프하는 고양이 오토마타</title>
+<style>
+:root{color-scheme:dark;--ink:#fff0db;--soft:#c7c3da;--pink:#f6a7c5}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b1024;font-family:system-ui,'Malgun Gothic',sans-serif;color:var(--ink)}canvas{display:block;width:100%;height:100%;touch-action:none}.ui{position:absolute;z-index:2;pointer-events:none}.head{top:20px;left:24px;max-width:460px;text-shadow:0 2px 8px #0008}.head h1{font-size:clamp(18px,2.5vw,29px);margin:0 0 9px;font-weight:750;letter-spacing:-.035em}.head p{font-size:13px;line-height:1.7;color:#e1d7e5;margin:0}.controls{right:18px;top:18px;width:245px;border:1px solid #ffffff47;background:#10162bcc;border-radius:17px;padding:17px;backdrop-filter:blur(10px);pointer-events:auto;box-shadow:0 8px 25px #0004}.controls label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;margin:9px 0}.controls input[type=range]{width:100%;accent-color:#f3b5cf;margin:4px 0 9px}.controls input[type=checkbox]{accent-color:#f3b5cf}.controls .sliderlabel{font-size:12px;color:#e9dce9;display:flex;justify-content:space-between}.controls h2{font-size:14px;margin:0 0 12px}.bottom{left:50%;bottom:18px;transform:translateX(-50%);text-align:center;color:#e2d5e4;font-size:12px;white-space:nowrap}.reset{position:absolute;right:20px;bottom:20px;z-index:3;background:#18203bbb;border:1px solid #e8afc5;color:#ffe4eb;border-radius:30px;padding:10px 17px;cursor:pointer;font-weight:700}.reset:hover{background:#30304d}.mobile-toggle{display:none}@media(max-width:700px){.head{left:13px;top:12px;max-width:calc(100% - 65px)}.head h1{font-size:17px}.head p{font-size:11px}.controls{top:58px;right:9px;width:188px;padding:12px;display:none}.controls.open{display:block}.mobile-toggle{display:block;position:absolute;right:10px;top:10px;z-index:4;background:#18203bdc;color:#fff;border:1px solid #ffffff55;border-radius:10px;padding:8px;cursor:pointer}.bottom{font-size:10px;bottom:12px}.reset{bottom:38px;right:10px;font-size:12px;padding:8px 12px}}
+</style>
+</head>
+<body>
+<canvas id="scene" aria-label="장미 행성 주변을 뛰어다니는 고양이 애니메이션"></canvas>
+<div class="ui head"><h1>✦ 높게, 또는 낮게 점프하는 고양이 오토마타 🐾</h1><p>작은 장미가 피어난 행성의 둘레를<br>Q · W · E · R 키로 고양이를 점프시켜 보세요.</p></div>
+<button class="mobile-toggle" id="toggle">⚙ 설정</button>
+<div class="ui controls" id="controls"><h2>작은 우주의 조종 장치</h2><label><span>자동 회전</span><input type="checkbox" id="auto" checked></label><label><span>자동 점프 (한 바퀴 평균 3회)</span><input type="checkbox" id="autojump" checked></label><label><span>점프 궤적</span><input type="checkbox" id="trail" checked></label><label><span>반짝이는 별</span><input type="checkbox" id="spark" checked></label><div class="sliderlabel"><span>회전 속도</span><span id="speedval"></span></div><input id="speed" type="range" min="0" max="100" value="45"><div class="sliderlabel"><span>점프 높이 배율</span><span id="jumpval"></span></div><input id="jump" type="range" min="0" max="100" value="70"><div class="sliderlabel"><span>움직임의 불규칙성</span><span id="chaosval"></span></div><input id="chaos" type="range" min="0" max="100" value="70"></div>
+<div class="ui bottom">Q 작은 점프 · W 보통 · E 높은 점프 · R 가장 높게 · 스페이스바 일시정지</div><button class="reset" id="reset">↻ 다시 시작</button>
+<script>
+(()=>{'use strict';
+const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);const TAU=Math.PI*2;
+let W=0,H=0,DPR=1,clock=0,angle=0,paused=false,last=0,dragging=false,lastPointer=0;
+let activeJump=null, jumpCount=0, nextAutoAngle=null;
+let currentSeed=13579;const rand=()=>{currentSeed=(Math.imul(1664525,currentSeed)+1013904223)>>>0;return currentSeed/4294967296};
+let stars=[],dust=[],particles=[];const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);stars=Array.from({length:Math.max(100,Math.floor(W*H/4000))},()=>({x:rand()*W,y:rand()*H,r:.3+rand()*1.5,p:rand()*TAU}));dust=Array.from({length:26},()=>({a:rand()*TAU,d:1.5+rand()*2.8,r:1+rand()*3}))}
+addEventListener('resize',resize);resize();
+function circle(x,y,r,color){ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fillStyle=color;ctx.fill()}
+function strokePath(points,color,width=1){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke()}
+function rose(x,y,size,rotation=0){ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.lineCap='round';ctx.strokeStyle='#6d9367';ctx.lineWidth=Math.max(1,size*.12);ctx.beginPath();ctx.moveTo(0,size*.7);ctx.quadraticCurveTo(-size*.18,size*.15,0,-size*.15);ctx.stroke();ctx.fillStyle='#7da978';ctx.beginPath();ctx.ellipse(-size*.25,size*.33,size*.27,size*.12,-.5,0,TAU);ctx.fill();ctx.beginPath();ctx.ellipse(size*.24,size*.15,size*.26,size*.12,.6,0,TAU);ctx.fill();circle(0,-size*.35,size*.34,'#dc668c');for(let i=0;i<5;i++){let a=i*TAU/5;ctx.fillStyle=i%2?'#ff9cb1':'#f67e9f';ctx.beginPath();ctx.ellipse(Math.cos(a)*size*.2,-size*.35+Math.sin(a)*size*.19,size*.21,size*.14,a,0,TAU);ctx.fill()}ctx.beginPath();ctx.arc(0,-size*.35,size*.16,.3,Math.PI*1.8);ctx.strokeStyle='#b7446d';ctx.lineWidth=Math.max(1,size*.09);ctx.stroke();ctx.restore()}
+function cat(x,y,scale,orientation,stretch=0,tailPhase=0){ctx.save();ctx.translate(x,y);ctx.rotate(orientation);ctx.scale(scale,scale);ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#f5a900';ctx.lineWidth=2.7;
+// The cat's local +Y points away from the planet; its feet point toward the planet.
+ctx.save();ctx.translate(0,8);ctx.rotate(.12*Math.sin(tailPhase));ctx.beginPath();ctx.moveTo(-14,-11);ctx.bezierCurveTo(-39,-22,-56,-44,-61,-32);ctx.bezierCurveTo(-71,-10,-41,-2,-21,-11);ctx.bezierCurveTo(-12,-13,-12,-14,-14,-11);ctx.fillStyle='#fff4d7';ctx.fill();ctx.stroke();ctx.restore();
+ctx.fillStyle='#fff5dc';ctx.beginPath();ctx.ellipse(0,-4,22,31+stretch*2,-.09,0,TAU);ctx.fill();ctx.stroke();
+ctx.beginPath();ctx.moveTo(-19,11);ctx.lineTo(-24,27+stretch*4);ctx.quadraticCurveTo(-20,32+stretch*4,-13,27+stretch*4);ctx.lineTo(-7,17);ctx.moveTo(8,17);ctx.lineTo(10,30+stretch*4);ctx.quadraticCurveTo(17,35+stretch*4,20,27+stretch*4);ctx.lineTo(18,9);ctx.stroke();
+ctx.beginPath();ctx.moveTo(-23,17);ctx.lineTo(-26,34+stretch*3);ctx.quadraticCurveTo(-20,37+stretch*3,-16,31+stretch*3);ctx.moveTo(18,15);ctx.lineTo(25,31+stretch*3);ctx.quadraticCurveTo(29,35+stretch*3,31,27+stretch*3);ctx.stroke();
+ctx.beginPath();ctx.moveTo(-24,-17);ctx.lineTo(-26,-43);ctx.lineTo(-8,-33);ctx.quadraticCurveTo(0,-36,11,-32);ctx.lineTo(27,-48);ctx.lineTo(27,-17);ctx.quadraticCurveTo(29,2,0,7);ctx.quadraticCurveTo(-28,4,-24,-17);ctx.fillStyle='#fff8e8';ctx.fill();ctx.stroke();
+ctx.fillStyle='#ffced2';ctx.beginPath();ctx.moveTo(-23,-22);ctx.lineTo(-22,-36);ctx.lineTo(-13,-30);ctx.fill();ctx.beginPath();ctx.moveTo(16,-31);ctx.lineTo(24,-40);ctx.lineTo(23,-23);ctx.fill();
+ctx.fillStyle='#8e664c';circle(-11,-18,2.4,'#8e664c');circle(12,-18,2.4,'#8e664c');ctx.fillStyle='#e58d91';ctx.beginPath();ctx.moveTo(-3,-10);ctx.lineTo(4,-10);ctx.lineTo(0,-6);ctx.fill();ctx.beginPath();ctx.moveTo(0,-6);ctx.quadraticCurveTo(-4,0,-8,-5);ctx.moveTo(0,-6);ctx.quadraticCurveTo(5,0,9,-5);ctx.strokeStyle='#b57a62';ctx.lineWidth=1.5;ctx.stroke();ctx.beginPath();ctx.moveTo(-7,-9);ctx.lineTo(-28,-13);ctx.moveTo(-8,-5);ctx.lineTo(-29,-3);ctx.moveTo(8,-9);ctx.lineTo(29,-13);ctx.moveTo(8,-5);ctx.lineTo(30,-3);ctx.stroke();ctx.restore()}
+function drawBackground(t){const bg=ctx.createRadialGradient(W*.5,H*.47,10,W*.5,H*.5,Math.max(W,H)*.85);bg.addColorStop(0,'#263050');bg.addColorStop(.48,'#151a37');bg.addColorStop(1,'#080c1d');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);ctx.save();ctx.globalAlpha=.15;for(let i=0;i<4;i++){let x=W*(.18+i*.22),y=H*(.3+(i%2)*.36),r=Math.min(W,H)*(.24+i*.035),g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,i%2?'#8e5a9e':'#315f9b');g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}ctx.restore();for(let s of stars){let alpha=.4+.5*Math.sin(t*.7+s.p)**2;circle(s.x,s.y,s.r,`rgba(255,232,214,${alpha})`);if(s.r>1.3&&$('spark').checked){ctx.strokeStyle=`rgba(255,214,164,${alpha*.6})`;ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(s.x-4,s.y);ctx.lineTo(s.x+4,s.y);ctx.moveTo(s.x,s.y-4);ctx.lineTo(s.x,s.y+4);ctx.stroke()}}}
+function drawPlanet(cx,cy,R,t){ctx.save();ctx.translate(cx,cy);const glow=ctx.createRadialGradient(-R*.3,-R*.4,R*.3,0,0,R*1.3);glow.addColorStop(0,'#fff1bf');glow.addColorStop(.6,'#a8bd8c');glow.addColorStop(1,'#65769e');circle(0,0,R,glow);ctx.save();ctx.beginPath();ctx.arc(0,0,R,0,TAU);ctx.clip();for(let i=0;i<95;i++){let a=i*2.39996,rr=R*Math.sqrt((i+.5)/95),x=Math.cos(a)*rr,y=Math.sin(a)*rr;ctx.fillStyle=i%3===0?'#efb6a0':i%3===1?'#9ab995':'#8a9fba';ctx.globalAlpha=.12+.08*(i%4);ctx.beginPath();ctx.ellipse(x,y,5+(i%5)*2,3+(i%4)*2,a,0,TAU);ctx.fill()}ctx.globalAlpha=1;ctx.restore();ctx.strokeStyle='#ffe8bd';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,R,0,TAU);ctx.stroke();for(let i=0;i<12;i++){let a=i*TAU/12+.13,r=R*(.83+.07*Math.sin(i*8)),x=Math.sin(a)*r,y=-Math.cos(a)*r;ctx.save();ctx.translate(x,y);ctx.rotate(a);rose(0,0,R*(i%4===0?.13:.075));ctx.restore()}for(let i=0;i<8;i++){let a=i*2.3999+.4;let x=R*.63*Math.cos(a),y=R*.63*Math.sin(a);ctx.fillStyle='#77839a';ctx.globalAlpha=.35;ctx.beginPath();ctx.ellipse(x,y,R*.06,R*.035,a,0,TAU);ctx.fill()}ctx.globalAlpha=1;ctx.restore()}
+function emit(x,y){for(let i=0;i<3;i++){particles.push({x,y,vx:(rand()-.5)*1.8,vy:(rand()-.5)*1.8,life:1,r:1+rand()*2.5});}if(particles.length>130)particles.splice(0,particles.length-130)}
+function drawParticles(dt){for(let p of particles){p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.life-=dt*.75;circle(p.x,p.y,p.r,`rgba(255,206,155,${Math.max(0,p.life)})`)}particles=particles.filter(p=>p.life>0)}
+function draw(t,dt){drawBackground(t);const small=W<700;let cx=W*(small?.5:.5),cy=H*(small?.55:.54);let R=Math.min(W*(small?.29:.22),H*(small?.245:.30),205);R=Math.max(R,58);let unit=R/185;
+// A fixed planet, an orbiting cat, and a non-repeating combination of jumps.
+let jumpSetting=Number($('jump').value)/100,chaos=Number($('chaos').value)/100;
+let a=angle, height=0, stretch=0;
+if(activeJump){
+  const elapsed=clock-activeJump.start;
+  const phase=elapsed/activeJump.duration;
+  if(phase>=1){activeJump=null;}
+  else {
+    // A smooth ballistic arc: launch quickly, slow at the top, then descend.
+    // Small secondary movement varies per key press but returns to zero at landing.
+    const arc=4*phase*(1-phase);
+    const flutter=Math.sin(Math.PI*phase)**2 * Math.sin(phase*TAU*activeJump.wiggles+activeJump.phase);
+    height=Math.max(0,activeJump.peak*(arc+activeJump.flutter*flutter));
+    stretch=Math.sin(Math.PI*phase)*(.25+.35*activeJump.peak/(R*.7));
+  }
+}
+let base=R+27*unit;let r=base+height;let x=cx+Math.sin(a)*r,y=cy-Math.cos(a)*r;
+if($('trail').checked){
+  ctx.save();ctx.setLineDash([2,8]);ctx.strokeStyle='#f5bdcb88';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(cx,cy,base,0,TAU);ctx.stroke();
+  if(activeJump){
+    const j=activeJump;ctx.setLineDash([3,5]);ctx.strokeStyle='#ffd08b99';ctx.beginPath();
+    for(let i=0;i<=36;i++){
+      const phase=i/36,arc=4*phase*(1-phase);
+      const flutter=Math.sin(Math.PI*phase)**2*Math.sin(phase*TAU*j.wiggles+j.phase);
+      const hh=Math.max(0,j.peak*(arc+j.flutter*flutter));
+      const aa=j.angleAtStart+(a-j.angleAtStart)*phase;
+      const rr=base+hh;
+      const xx=cx+Math.sin(aa)*rr, yy=cy-Math.cos(aa)*rr;
+      i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+// Planet foreground and cat's tiny shadow on the surface.
+drawPlanet(cx,cy,R,t);let sx=cx+Math.sin(a)*(R+3),sy=cy-Math.cos(a)*(R+3);circle(sx,sy,Math.max(2,7*unit),'#3d4b5a88');
+if(!paused&&height>R*.09&&rand()<.15)emit(x,y);
+cat(x,y,clamp(unit*.92,.46,1.2),a,stretch,t*3+jumpCount*.7);
+drawParticles(dt);
+}
+// Average angular gap = 2π/3, so the cat jumps about three times per orbit.
+// Bounded, varied gaps avoid mechanical regularity and excessive clustering.
+function nextGap(){return (TAU/3)*(.65+.70*rand());}
+function loop(ts){
+  if(!last)last=ts;
+  let dt=Math.min((ts-last)/1000,.05);last=ts;
+  if(!paused){
+    clock+=dt;
+    if(!dragging&&$('auto').checked){
+      let speed=Number($('speed').value)/100;
+      angle+=(.08+speed*.8)*dt;
+      if($('autojump').checked){
+        if(nextAutoAngle===null)nextAutoAngle=angle+nextGap();
+        if(angle>=nextAutoAngle){
+          // Keep Q/W/E/R available at any time; postpone an automatic jump
+          // until the current jump has landed instead of interrupting it.
+          if(!activeJump||clock-activeJump.start>=activeJump.duration){
+            const keys=['q','w','e','r'];
+            launchJump(keys[Math.floor(rand()*keys.length)]);
+            nextAutoAngle=angle+nextGap();
+          }
+        }
+      }else nextAutoAngle=null;
+    }
+  }
+  ctx.clearRect(0,0,W,H);draw(clock,paused?0:dt);requestAnimationFrame(loop);
+}requestAnimationFrame(loop);
+for(let id of ['speed','jump','chaos']){let input=$(id),output=$(id+'val');function update(){output.textContent=input.value+'%'}input.addEventListener('input',update);update()}
+function launchJump(key){
+  const levels={q:.16,w:.32,e:.53,r:.78};
+  if(!(key in levels))return;
+  const chaos=Number($('chaos').value)/100;
+  const multiplier=.65+Number($('jump').value)/100*.7;
+  const variation=1+(rand()*2-1)*(.035+.18*chaos);
+  const durationVariation=1+(rand()*2-1)*(.025+.14*chaos);
+  const peak=levels[key]*Math.min(W*.22,H*.28,205)*multiplier*variation;
+  const duration=(.48+levels[key]*.72)*durationVariation;
+  activeJump={start:clock,angleAtStart:angle,peak,duration,
+    flutter:(.01+.055*chaos)*rand(),wiggles:1+Math.floor(rand()*3),phase:rand()*TAU};
+  jumpCount++;
+  if(paused)paused=false;
+  for(let i=0;i<9;i++)particles.push({x:W*.5,y:H*.5,vx:(rand()-.5)*2,vy:(rand()-.5)*2,life:.7,r:1+rand()*2});
+}
+$('reset').addEventListener('click',()=>{angle=0;clock=0;particles=[];activeJump=null;nextAutoAngle=null;paused=false});$('autojump').addEventListener('change',()=>{nextAutoAngle=null});$('toggle').addEventListener('click',()=>$('controls').classList.toggle('open'));
+addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.altKey||e.metaKey||e.repeat)return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;
+  const key=e.key.toLowerCase();
+  if(['q','w','e','r'].includes(key)){e.preventDefault();launchJump(key);}
+  else if(e.code==='Space'){e.preventDefault();paused=!paused;}
+});
+canvas.addEventListener('pointerdown',e=>{dragging=true;lastPointer=e.clientX;canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(!dragging)return;angle+=(e.clientX-lastPointer)*.012;lastPointer=e.clientX});
+canvas.addEventListener('pointerup',()=>dragging=false);canvas.addEventListener('pointercancel',()=>dragging=false);
+})();
+</script>
+</body></html>
