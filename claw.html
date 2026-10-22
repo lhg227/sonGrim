@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eef3eb"><title>DDC CLAW CLUB · 디디씨 인형뽑기</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+<header><a class="brand" href="#" aria-label="DDC 인형뽑기"><span class="brand-icon">✳</span><div>DDC <b>CLAW CLUB</b><small>작은 두근거림, 한 번의 도전.</small></div></a><div class="head-right"><span class="live"><i></i> FREE PLAY</span><div class="stat"><small>시도</small><b id="tries">00</b></div><div class="stat prize-stat"><small>획득</small><b id="wins">00</b></div></div></header>
+<main>
+<div class="game-top"><div class="eyebrow">THE LITTLE ARCADE <span> / </span> 01</div><div class="toolbar"><button id="camera" title="정면 / 위에서 보기 전환">◈ <span>위에서 보기</span></button><button id="sound" aria-pressed="false" title="효과음 켜기">♪ <span>소리 꺼짐</span></button><button id="reset" title="시도와 획득 수를 초기화하고 인형을 다시 배치">↻ <span>새 게임</span></button></div></div>
+<section class="machine" aria-label="3D 인형뽑기 게임">
+<div id="viewport"><canvas id="game" aria-label="집게와 인형이 있는 3D 공간"></canvas></div>
+<div class="scene-heading"><span class="little-tag">DDC ORIGINAL</span><h1>오늘의 행운을<br>뽑아볼까요?</h1><p>디디씨와 함께하는 작은 오락실</p></div>
+<div class="stages"><span id="step-aim" class="current">01 조준</span><i></i><span id="step-grab">02 잡기</span><i></i><span id="step-win">03 획득</span></div>
+<div class="status" role="status" aria-live="polite"><span id="status-dot"></span><div><b id="status-title">어디를 잡아볼까요?</b><small id="status-detail">방향 버튼을 길게 눌러 집게를 움직여 주세요.</small></div></div>
+<div id="toast" class="toast" aria-live="polite"></div>
+<div class="legend"><span class="crosshair-icon">⌖</span> 바닥의 원이 집게가 내려갈 위치예요</div>
+<div id="loading" class="loading">인형을 준비하고 있어요…</div>
+</section>
+<section class="console" aria-label="게임 조작판">
+<div class="console-intro"><span class="eyebrow">TAKE YOUR CHANCE</span><h2>조준하고, 내려요.</h2><p>잘 잡아도 흔들리면 빠질 수 있어요.</p></div>
+<div class="direction-pad" aria-label="집게 이동">
+<button data-dir="up" aria-label="집게 위쪽으로 이동"><span>↑</span><small>뒤로</small></button>
+<button data-dir="left" aria-label="집게 왼쪽으로 이동"><span>←</span><small>왼쪽</small></button>
+<div class="pad-center">✳</div>
+<button data-dir="right" aria-label="집게 오른쪽으로 이동"><span>→</span><small>오른쪽</small></button>
+<button data-dir="down" aria-label="집게 아래쪽으로 이동"><span>↓</span><small>앞으로</small></button>
+</div>
+<div class="drop-wrap"><button id="drop" aria-label="집게 하강"><span class="drop-symbol">↓</span><b id="drop-label">집게 내리기</b><small>SPACE</small></button><span>한 번 누르면 자동으로 잡고 올라와요</span></div>
+</section>
+<footer><span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 이동 <i></i><kbd>SPACE</kbd> 하강</span><span>보라 상자에 쏙, 경사로를 따라 데굴데굴.</span><span class="footer-brand">MADE FOR LITTLE JOYS ↗</span></footer>
+</main>
+</div>
+<script src="resources/model-data.js"></script><script src="game.js"></script>
+</body></html>

@@ -1,0 +1,5 @@
+Three.js 0.180.0 — https://threejs.org/ — MIT
+Includes OBJLoader and MTLLoader addons. License: THREE-LICENSE.txt
+
+Bundled with esbuild 0.25.10 (build tool, MIT).
+The supplied character OBJ/MTL are user-provided assets.

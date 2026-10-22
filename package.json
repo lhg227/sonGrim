@@ -1,0 +1,15 @@
+{
+  "name": "ddc-claw-club",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild source/game.js --bundle --format=iife --minify --legal-comments=eof --outfile=game.js"
+  },
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}
