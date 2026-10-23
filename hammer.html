@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f3eb"><title>디디씨 잡기! · 30초 챌린지</title>
+<link rel="stylesheet" href="catcher_assets/catcher_style.css">
+<script defer src="catcher_assets/catcher_three.min.js"></script>
+<script defer src="catcher_assets/catcher_model.js"></script>
+<script defer src="catcher_assets/catcher_game.js"></script>
+</head>
+<body>
+<div class="app">
+<header class="topbar"><a class="brand" href="catcher_game.html" aria-label="디디씨 잡기 처음으로"><span class="brand-icon">D</span><span>DDC PLAYGROUND</span></a><button id="sound" class="sound" aria-pressed="true" aria-label="효과음 끄기">♪ <span>효과음 켜짐</span></button></header>
+<main>
+<section class="heading"><div><p class="eyebrow">30 SECOND CHALLENGE</p><h1>디디씨 <span>잡기!</span><i class="sparkle">✳</i></h1><p class="intro">쏙 올라온 디디씨를, 분홍 풍선망치로 톡!</p></div><div class="pill"><span class="live-dot"></span> 빠르게 잡을수록 높은 점수</div></section>
+<section class="game" aria-label="디디씨 두더지잡기 게임">
+<div class="hud"><div class="score-card"><span class="stat-label">나의 점수</span><div class="score-line"><strong id="score">0</strong><span>점</span><span id="gain" aria-hidden="true"></span></div></div><div class="time-card"><div class="time-top"><span class="stat-label">남은 시간</span><span><strong id="time">30.0</strong><small>초</small></span></div><div class="time-track"><div id="time-fill"></div></div></div><div class="hit-card"><span class="stat-label">잡은 디디씨</span><div><strong id="hits">0</strong><span>마리</span></div></div></div>
+<div id="arena" class="arena">
+<canvas id="canvas" aria-label="나타나는 디디씨를 클릭하세요"></canvas>
+<div class="arena-label"><span>DDC GARDEN</span><span>01 — 09</span></div>
+<div id="float-layer" class="float-layer" aria-hidden="true"></div>
+<div id="overlay" class="overlay"><div class="modal" id="modal"><span class="modal-tag">READY, SET, POP!</span><h2 id="modal-title">30초, 준비됐나요?</h2><p id="modal-desc">디디씨가 얼굴을 내밀면 클릭!<br>빨리 잡을수록 <b>100점</b>에 가까워져요.</p><div class="score-guide"><span>나오자마자 <b>100점</b></span><i>→</i><span>들어가기 직전 <b>10점</b></span></div><div id="result" hidden></div><button id="start" class="start" disabled>모델을 준비하고 있어요…</button><p class="modal-foot">마우스 클릭 · 터치로도 톡!</p></div></div>
+<div id="countdown" class="countdown" hidden></div>
+<div id="combo" class="combo" aria-hidden="true"></div>
+<div class="board-caption"><span class="caption-dot"></span> 동그란 조준점을 맞춰 톡! 디디씨 주변도 잘 잡혀요.</div>
+</div>
+<div class="game-bottom"><span><b>HOW TO PLAY</b> 디디씨를 클릭하면 점수가 올라가요.</span><span class="points">100 · 90 · 80 ··· 10점</span></div>
+</section>
+<footer><span>작은 디디씨, 커다란 즐거움.</span><span>DDC <b>×</b> BALLOON HAMMER</span></footer>
+</main>
+</div>
+<div id="hammer" class="hammer" aria-hidden="true"><span class="hammer-aim"></span><img src="catcher_assets/catcher_hammer.svg" alt="" draggable="false"></div>
+<div id="announcer" class="sr-only" aria-live="polite"></div>
+</body>
+</html>
