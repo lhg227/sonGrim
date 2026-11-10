@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>청춘놀장 럭키 쿠지 | 노트북</title>
+<style>
+:root{--green:#244633;--green2:#54795b;--gold:#d9b260;--ink:#26372c;--muted:#788379;--line:#e1e7df;--paper:#f4f5f0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;min-height:100vh}
+button,select{font:inherit}
+.app{width:min(1360px,100%);margin:0 auto;padding:12px 18px 18px}
+.topbar{height:64px;border:1px solid #d6c69e;border-radius:17px;background:radial-gradient(circle at 92% 18%,#ffffff30 0 3px,transparent 4px),radial-gradient(circle at 88% 78%,#f6d98b55 0 4px,transparent 5px),linear-gradient(110deg,#1f3c2c,#5e8062);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 23px;margin-bottom:12px;box-shadow:0 4px 12px #28483218}
+.brand small{font-size:9px;letter-spacing:3px;color:#d8e5d8}.brand h1{font-size:23px;line-height:1.1;margin:3px 0 0;font-weight:900}.topnote{font-size:12px;color:#e0e9e0}
+.layout{display:grid;grid-template-columns:minmax(570px,1.15fr) minmax(390px,.85fr);gap:14px;align-items:start}
+.left,.right{min-width:0}
+.boardpanel,.panel{background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:0 2px 9px #1b39200a}
+.boardpanel{padding:13px;background:linear-gradient(180deg,#fff 0%,#fffdf8 100%)}
+.panel{padding:13px;margin-bottom:10px}
+.boardhead{display:flex;justify-content:space-between;align-items:center;margin:0 2px 10px}
+.boardhead strong{font-size:15px}.boardhead span{font-size:11px;color:var(--muted)}
+.board{display:grid;grid-template-columns:repeat(17,minmax(0,1fr));grid-template-rows:repeat(17,minmax(0,1fr));gap:5px;width:min(100%,620px);aspect-ratio:1/1;margin:0 auto}
+.tile{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;aspect-ratio:auto;padding:0;overflow:hidden;border:1px solid #294d36;border-radius:7px;background:linear-gradient(145deg,#789b7d,#3e6749);color:#fff;font-weight:900;line-height:1;font-size:clamp(10px,.95vw,14px);cursor:pointer;box-shadow:inset 0 -3px 0 #24432e,0 1px 2px #1e3a2820;transform-style:preserve-3d;transition:filter .15s,transform .15s}
+.tile:hover:not(:disabled){filter:brightness(1.13);transform:translateY(-2px) scale(1.025);box-shadow:inset 0 -3px 0 #24432e,0 4px 8px #1e3a2830}
+.tile:disabled{cursor:default}
+.tile.opening{animation:tileFlip .72s cubic-bezier(.2,.75,.25,1) both;z-index:2}
+.tile.winner{background:radial-gradient(circle at 35% 25%,#fff2c8,#f1ca72 70%,#dfad4d);border:1px solid #b98b37;color:#60471b;box-shadow:inset 0 -3px 0 #c29239,0 0 0 2px #f2dfb2}
+.tile.winner::after{content:"★";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(11px,1.25vw,18px);line-height:1}
+.tile.opened{background:#e9eee8;border:1px solid #d9e1d7;color:#879287;box-shadow:none;font-size:10px;line-height:1}
+@keyframes tileFlip{0%{transform:perspective(400px) rotateY(0) scale(1)}45%{transform:perspective(400px) rotateY(95deg) scale(1.13)}100%{transform:perspective(400px) rotateY(180deg) scale(1.04)}}
+.boardfoot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;color:var(--muted);font-size:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px;text-align:center}
+.stat strong{display:block;font-size:23px;line-height:1.2}.stat span{font-size:10px;color:var(--muted)}
+.sectiontitle{display:flex;align-items:center;justify-content:space-between;margin:0 1px 8px}
+.sectiontitle strong{font-size:14px}.sectiontitle span{font-size:10px;color:var(--muted)}
+.prizes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.prize{border:1px solid var(--line);border-radius:10px;padding:8px;background:#fbfcfa}
+.rank{font-size:11px;font-weight:900;color:var(--green2)}
+.prize select{margin-top:5px;width:100%;padding:7px 5px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);font-size:11px}
+.qty{font-size:10px;color:var(--muted);margin-top:4px}
+.result{min-height:128px;border:2px dashed #d0ad66;border-radius:13px;background:#fffaf0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:12px;position:relative;overflow:hidden}
+.result .eyebrow{font-size:9px;letter-spacing:2px;color:#8b8068}
+.result .win{font-size:25px;font-weight:950;color:#a77b2d;margin:5px 0}
+.result .gift{font-size:16px;font-weight:850}
+.result .detail{font-size:10px;color:var(--muted);margin-top:5px}
+.result.reveal{animation:cardReveal .7s cubic-bezier(.18,.85,.3,1) both}
+@keyframes cardReveal{0%{transform:scale(.82);opacity:.45;clip-path:inset(45% 35% 45% 35% round 16px)}55%{transform:scale(1.035);opacity:1;clip-path:inset(0 0 0 0 round 13px)}100%{transform:scale(1);clip-path:inset(0 0 0 0 round 13px)}}
+.spark{position:absolute;pointer-events:none;font-size:17px;animation:sparkle 900ms ease-out forwards}
+@keyframes sparkle{0%{opacity:0;transform:translateY(12px) scale(.4) rotate(0)}30%{opacity:1}100%{opacity:0;transform:translateY(-38px) scale(1.3) rotate(40deg)}}
+.controls{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.btn{border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);padding:8px 10px;font-size:10px;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}.btn:hover{background:#f4f7f2}.btn.primary{background:var(--gold);border-color:var(--gold);font-weight:850}
+.soundrow{display:flex;justify-content:flex-end;margin-top:7px}
+.soundtoggle{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);cursor:pointer}.soundtoggle input{accent-color:var(--green2)}
+.history{max-height:135px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:#fff}
+.historyrow{display:grid;grid-template-columns:68px 1fr 54px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #edf0eb;font-size:10px}
+.historyrow:last-child{border-bottom:0}.historyrow strong{text-align:right}.historyrow span:last-child{text-align:right;color:var(--muted)}
+.empty{padding:12px;text-align:center;font-size:10px;color:var(--muted)}
+.note{font-size:9px;line-height:1.55;color:var(--muted);margin:8px 2px}
+@media(max-width:950px){.app{padding:10px}.layout{grid-template-columns:1fr}.board{width:min(100%,620px)}.right{display:grid;grid-template-columns:1fr 1fr;gap:9px}.right .panel{margin:0}.historypanel{grid-column:1/-1}}
+@media(max-width:560px){.topbar{height:auto;padding:13px 15px}.topnote{display:none}.right{display:block}.right .panel{margin-bottom:9px}.board{gap:3px}.tile{border-radius:4px}.boardpanel{padding:8px}.tile{font-size:9px}}
+@media(min-width:951px) and (max-height:820px){
+ .app{padding-top:8px}.topbar{height:55px;margin-bottom:8px}.brand h1{font-size:20px}
+ .layout{grid-template-columns:minmax(540px,1.12fr) minmax(370px,.88fr);gap:10px}
+ .boardpanel{padding:9px}.board{width:min(100%,570px);gap:4px}
+ .panel{padding:10px;margin-bottom:7px}.stat{padding:7px}.stat strong{font-size:20px}
+ .result{min-height:108px}.history{max-height:105px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+ <header class="topbar"><div class="brand"><small>2026 DDC YOUTH FESTA</small><h1>LUCKY KUJI!</h1></div><div class="topnote">번호를 선택하고, 행운의 경품을 확인하세요 🎁</div></header>
+ <div class="layout">
+  <section class="left">
+   <div class="boardpanel">
+    <div class="boardhead"><strong>🎟️ 행운의 뽑기판</strong><span id="boardHint">남은 칸 240개</span></div>
+    <div class="board" id="board"></div>
+    <div class="boardfoot"><span>원하는 번호를 클릭하면 뽑기가 시작됩니다.</span><span>17 × 17</span></div>
+   </div>
+  </section>
+  <aside class="right">
+   <section>
+    <div class="stats">
+     <div class="stat"><strong id="remaining">240</strong><span>남은 경품</span></div>
+     <div class="stat"><strong id="drawn">0</strong><span>뽑기 완료</span></div>
+     <div class="stat"><strong id="total">240</strong><span>전체 수량</span></div>
+    </div>
+    <div class="panel">
+     <div class="sectiontitle"><strong>🎁 등수별 경품 배정</strong><span>상품 변경 시 등수 간 교환</span></div>
+     <div class="prizes">
+      <div class="prize"><div class="rank">1등 🥇</div><select data-rank="0"><option>담요·텀블러 세트</option><option>가습기·핸드크림 세트</option><option>센터세트</option><option>우산</option></select><div class="qty" id="q0">30개 남음</div></div>
+      <div class="prize"><div class="rank">2등 🥈</div><select data-rank="1"><option>가습기·핸드크림 세트</option><option>담요·텀블러 세트</option><option>센터세트</option><option>우산</option></select><div class="qty" id="q1">30개 남음</div></div>
+      <div class="prize"><div class="rank">3등 🥉</div><select data-rank="2"><option>센터세트</option><option>담요·텀블러 세트</option><option>가습기·핸드크림 세트</option><option>우산</option></select><div class="qty" id="q2">100개 남음</div></div>
+      <div class="prize"><div class="rank">4등 🎖️</div><select data-rank="3"><option>우산</option><option>담요·텀블러 세트</option><option>가습기·핸드크림 세트</option><option>센터세트</option></select><div class="qty" id="q3">80개 남음</div></div>
+     </div>
+    </div>
+    <div class="panel">
+     <div class="sectiontitle"><strong>✨ 당첨 결과</strong><span>선택한 번호의 결과</span></div>
+     <div class="result" id="result" aria-live="polite"><div class="eyebrow">YOUR LUCKY MOMENT</div><div class="win">행운을 골라보세요!</div><div class="gift">왼쪽 뽑기판에서 번호를 선택하세요.</div></div>
+     <div class="soundrow"><label class="soundtoggle"><input type="checkbox" id="soundOn" checked> 뽑기 효과음 켜기 🔊</label></div>
+     <div class="controls">
+      <button class="btn" id="undo">↩ 마지막 뽑기 취소</button>
+      <button class="btn" id="reset">전체 초기화</button>
+      <button class="btn" id="shuffle">뽑기판 섞기</button>
+      <button class="btn" id="fullscreen">전체 화면</button>
+      <button class="btn primary" id="csv">당첨 내역 다운로드</button>
+     </div>
+    </div>
+   </section>
+   <section class="panel historypanel">
+    <div class="sectiontitle"><strong>📋 당첨 내역</strong><span id="historyCount">0건</span></div>
+    <p class="note" id="saveStatus" role="status" aria-live="polite"></p>
+    <div class="history" id="history"><div class="empty">아직 당첨 내역이 없습니다.</div></div>
+    <p class="note">경품 설정·번호별 랜덤 배치·당첨 내역·효과음 설정은 자동 저장되어 F5를 눌러도 유지됩니다. 같은 브라우저에서 같은 위치의 파일을 열어 주세요. 브라우저 사이트 데이터 삭제·시크릿 모드에서는 저장이 유지되지 않을 수 있습니다.</p>
+   </section>
+  </aside>
+ </div>
+</div>
+<script>
+(()=>{
+'use strict';
+const initial={'센터세트':100,'우산':80,'담요·텀블러 세트':30,'가습기·핸드크림 세트':30};
+const selects=[...document.querySelectorAll('select[data-rank]')],$=id=>document.getElementById(id);
+const defaults=selects.map(s=>s.value),total=240,STORAGE_KEY='ddc-kuji-original-autosave-v1';
+let state,locked=false,busy=false,audioCtx=null,animationTimer;
+function rand(max){const a=new Uint32Array(1),limit=Math.floor(4294967296/max)*max;do{crypto.getRandomValues(a)}while(a[0]>=limit);return a[0]%max}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rand(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function fresh(){return {version:1,updatedAt:Date.now(),selections:[...defaults],soundOn:true,deck:shuffle(Object.entries(initial).flatMap(([item,n])=>Array(n).fill(item))),history:[],view:{type:'ready'}}}
+function copy(s){return JSON.parse(JSON.stringify(s))}
+function valid(s){
+ if(!s||s.version!==1||!Number.isFinite(s.updatedAt)||typeof s.soundOn!=='boolean')return false;
+ if(!Array.isArray(s.selections)||s.selections.length!==4||new Set(s.selections).size!==4||s.selections.some(x=>!Object.hasOwn(initial,x)))return false;
+ if(!Array.isArray(s.deck)||s.deck.length!==total||s.deck.some(x=>!Object.hasOwn(initial,x))||Object.entries(initial).some(([item,n])=>s.deck.filter(x=>x===item).length!==n))return false;
+ if(!Array.isArray(s.history)||s.history.length>total)return false;
+ const seen=new Set();
+ for(const h of s.history){if(!h||!Number.isInteger(h.number)||h.number<1||h.number>total||seen.has(h.number)||s.deck[h.number-1]!==h.item||h.rank!==(s.selections.indexOf(h.item)+1)+'등'||typeof h.time!=='string'||h.time.length>100)return false;seen.add(h.number)}
+ if(!s.view||!['ready','draw','undo','shuffled'].includes(s.view.type))return false;
+ return s.view.type!=='draw'||seen.has(s.view.number);
+}
+function storageStatus(error){const p=$('saveStatus');p.style.color=error?'#b02b2b':'#54795b';p.textContent=error?'⚠ '+error:'✓ 자동 저장됨 · '+new Date(state.updatedAt).toLocaleTimeString('ko-KR')+' · F5를 눌러도 유지됩니다.'}
+function load(){
+ try{const raw=localStorage.getItem(STORAGE_KEY);if(raw){const saved=JSON.parse(raw);if(!valid(saved))throw Error('invalid');state=saved}else{state=fresh();localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}storageStatus()}
+ catch(e){if(!state)state=fresh();locked=true;storageStatus('자동 저장 기록을 읽거나 저장할 수 없어 추첨을 중지했습니다. 브라우저 저장 설정을 확인한 뒤 새로고침해 주세요. 새로 시작하려면 전체 초기화를 눌러 주세요.')}
+ render();
+}
+function sync(){
+ if(locked)return false;
+ try{const raw=localStorage.getItem(STORAGE_KEY),saved=raw&&JSON.parse(raw);if(!valid(saved))throw Error('invalid');if(saved.updatedAt!==state.updatedAt){state=saved;render();storageStatus()}return true}
+ catch(e){locked=true;storageStatus('저장 기록을 확인할 수 없어 추첨을 중지했습니다. 새로고침하거나 전체 초기화를 눌러 주세요.');render();return false}
+}
+// Save the complete next state before applying any visible result or animation.
+function commit(next,{reset=false}={}){
+ if(locked&&!reset)return false;
+ try{next.updatedAt=Math.max(Date.now(),state.updatedAt+1);if(!valid(next))throw Error('invalid');localStorage.setItem(STORAGE_KEY,JSON.stringify(next));state=next;locked=false;storageStatus();render();return true}
+ catch(e){locked=true;storageStatus('자동 저장에 실패하여 이번 변경을 적용하지 않았습니다. 브라우저 저장 설정·공간을 확인한 뒤 새로고침해 주세요.');render();return false}
+}
+function stock(){const result={...initial};for(const h of state.history)result[h.item]--;return result}
+function renderBoard(){
+ const board=$('board'),drawn=new Set(state.history.map(h=>h.number));board.innerHTML='';
+ for(let i=0;i<total;i++){
+  const done=drawn.has(i+1),b=document.createElement('button');b.type='button';b.className=done?'tile winner':'tile';b.textContent=done?'':i+1;b.disabled=done||busy||locked;
+  b.dataset.number=i+1;b.setAttribute('aria-label',done?`${i+1}번 뽑기 완료`:`${i+1}번 뽑기`);
+  b.addEventListener('click',()=>pick(i));board.appendChild(b);
+ }
+}
+function renderResult(){
+ const box=$('result');box.classList.remove('reveal');
+ if(state.view.type==='draw'){
+  const index=state.history.findIndex(h=>h.number===state.view.number),h=state.history[index];
+  box.innerHTML=`<div class="eyebrow">CONGRATULATIONS! · ${h.number}번 선택</div><div class="win">${h.rank} 당첨! 🎉</div><div class="gift">${h.item}</div><div class="detail">${index+1}번째 당첨자 · ${h.time}</div>`;
+ }else if(state.view.type==='undo')box.innerHTML='<div class="eyebrow">UNDO</div><div class="win">마지막 뽑기 취소</div><div class="gift">해당 번호를 다시 선택할 수 있습니다.</div>';
+ else if(state.view.type==='shuffled')box.innerHTML='<div class="eyebrow">SHUFFLED!</div><div class="win">뽑기판을 섞었습니다!</div><div class="gift">원하는 번호를 선택해 주세요.</div>';
+ else box.innerHTML='<div class="eyebrow">YOUR LUCKY MOMENT</div><div class="win">행운을 골라보세요!</div><div class="gift">왼쪽 뽑기판에서 번호를 선택하세요.</div>';
+}
+function render(){
+ const history=state.history,left=total-history.length,remaining=stock();
+ $('remaining').textContent=left;$('drawn').textContent=history.length;$('total').textContent=total;$('boardHint').textContent='남은 칸 '+left+'개';$('historyCount').textContent=history.length+'건';
+ selects.forEach((s,i)=>{s.value=state.selections[i];s.disabled=busy||locked;$('q'+i).textContent=remaining[s.value]+'개 남음'});
+ $('soundOn').checked=state.soundOn;$('soundOn').disabled=busy||locked;
+ $('undo').disabled=busy||locked||!history.length;$('shuffle').disabled=busy||locked;$('reset').disabled=busy;
+ $('history').innerHTML=history.length?history.slice().reverse().map((h,i)=>`<div class="historyrow"><span>${history.length-i}회차 · ${h.rank}</span><strong>${h.item}</strong><span>${h.number}번</span></div>`).join(''):'<div class="empty">아직 당첨 내역이 없습니다.</div>';
+ renderBoard();renderResult();
+}
+function popSound(){
+ if(!$('soundOn').checked)return;
+ try{
+  const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+  if(!audioCtx)audioCtx=new C();if(audioCtx.state==='suspended')audioCtx.resume();
+  const t=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type='sine';o.frequency.setValueAtTime(610,t);o.frequency.exponentialRampToValueAtTime(155,t+.13);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.38,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+.18);
+  o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.19);
+  const len=Math.floor(audioCtx.sampleRate*.055),buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
+  const n=audioCtx.createBufferSource(),ng=audioCtx.createGain();n.buffer=buf;ng.gain.setValueAtTime(.16,t);ng.gain.exponentialRampToValueAtTime(.0001,t+.055);n.connect(ng);ng.connect(audioCtx.destination);n.start(t);
+ }catch(e){}
+}
+function sparkle(container){
+ ['✦','✧','✨','★','✦'].forEach((s,i)=>{const el=document.createElement('span');el.className='spark';el.textContent=s;el.style.left=(15+i*16)+'%';el.style.top=(35+(i%2)*25)+'%';el.style.animationDelay=(i*45)+'ms';container.appendChild(el);setTimeout(()=>el.remove(),1100)});
+}
+
+function pick(i){
+ if(busy||!sync()||state.history.some(h=>h.number===i+1))return;
+ const next=copy(state),item=next.deck[i],rank=next.selections.indexOf(item);
+ next.history.push({number:i+1,item,rank:(rank+1)+'등',time:new Date().toLocaleTimeString('ko-KR')});next.view={type:'draw',number:i+1};
+ if(!commit(next))return;
+ // The result and the original random deck are already saved, including during F5.
+ busy=true;render();const tile=$('board').children[i];tile.className='tile opening';tile.textContent=i+1;
+ $('result').innerHTML='<div class="eyebrow">YOUR LUCKY MOMENT</div><div class="win">두근두근…</div><div class="gift">당첨 결과를 확인하고 있어요!</div>';
+ animationTimer=setTimeout(()=>{busy=false;render();const result=$('result');void result.offsetWidth;result.classList.add('reveal');sparkle(result);popSound()},430);
+}
+selects.forEach((s,index)=>s.addEventListener('change',()=>{
+ const value=s.value;if(busy||!sync()){render();return}
+ if(state.history.length){alert('추첨이 시작된 뒤에는 상품을 변경할 수 없습니다. 전체 초기화 후 변경해 주세요.');render();return}
+ const next=copy(state),other=next.selections.indexOf(value);
+ // Swap the two ranks so every prize can be selected without creating duplicates.
+ if(other!==index)next.selections[other]=next.selections[index];next.selections[index]=value;commit(next);
+}));
+$('soundOn').addEventListener('change',()=>{const value=$('soundOn').checked;if(busy||!sync()){render();return}const next=copy(state);next.soundOn=value;commit(next)});
+$('undo').onclick=()=>{
+ if(busy||!sync()||!state.history.length)return;
+ const next=copy(state);next.history.pop();next.view={type:'undo'};commit(next);
+};
+$('reset').onclick=()=>{
+ if(busy)return;
+ if(confirm('저장된 모든 당첨 내역·경품 설정·효과음 설정을 지우고 처음부터 시작할까요?\n번호별 경품도 새로 무작위 배치됩니다. 이 작업은 되돌릴 수 없습니다.'))commit(fresh(),{reset:true});
+};
+$('shuffle').onclick=()=>{
+ if(busy||!sync())return;
+ if(state.history.length){alert('추첨이 시작된 뒤에는 섞을 수 없습니다. 초기화 후 이용해 주세요.');return}
+ if(!confirm('번호별 경품을 다시 섞을까요?\n새 랜덤 배치는 즉시 자동 저장됩니다.'))return;
+ const next=copy(state);shuffle(next.deck);next.view={type:'shuffled'};commit(next);
+};
+$('fullscreen').onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen?.();else await document.exitFullscreen?.()}catch(e){alert('전체 화면을 사용할 수 없습니다. PC에서는 F11을 이용해 주세요.')}};
+$('csv').onclick=()=>{
+ if(!state.history.length){alert('다운로드할 당첨 내역이 없습니다.');return}
+ const rows=[['회차','선택 번호','등수','경품','추첨 시간'],...state.history.map((h,i)=>[i+1,h.number,h.rank,h.item,h.time])];
+ const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+ const a=document.createElement('a'),u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=u;a.download='청춘놀장_쿠지_당첨내역.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);
+};
+window.addEventListener('storage',e=>{if(e.key!==STORAGE_KEY)return;clearTimeout(animationTimer);busy=false;if(sync())render()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!busy)sync()});
+load();
+})();
+</script>
+</body></html>
