@@ -142,16 +142,111 @@ function waterSound(kind){if(!soundOn||!audioContext||audioContext.state!=='runn
 function updateGameCamera(dt,snap=false){const a=arena.players[0],b=arena.players[1],target=fullMap?{x:-7,z:3}:{x:(a.x+b.x)/2,z:(a.z+b.z)/2};const distance=Math.hypot(a.x-b.x,a.z-b.z),fit=(distance*.95+10)/Math.min(1,Math.max(.35,camera.aspect)),radius=fullMap?94:Math.max(userZoom,fit),alpha=snap?1:1-Math.exp(-dt*7);cameraFocus.x+=(target.x-cameraFocus.x)*alpha;cameraFocus.z+=(target.z-cameraFocus.z)*alpha;cameraRadius+=(radius-cameraRadius)*alpha;camera.position.set(cameraFocus.x+Math.sin(gameYaw)*Math.cos(gamePitch)*cameraRadius,Math.sin(gamePitch)*cameraRadius+.7,cameraFocus.z+Math.cos(gameYaw)*Math.cos(gamePitch)*cameraRadius);camera.lookAt(cameraFocus.x,.7,cameraFocus.z);camera.updateMatrixWorld();}
 function resizeGame(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(arena)updateGameCamera(0,true);}
 function drawGameMap(){const ctx=$('map').getContext('2d'),W=330,H=220;const pos=(x,z)=>({x:(x+31)/45*W,y:(z+29)/68*H});ctx.clearRect(0,0,W,H);ctx.fillStyle='#e3e9de';ctx.fillRect(0,0,W,H);function rect(x,z,w,d,color){const p=pos(x,z),q=pos(x+w,z+d);ctx.fillStyle=color;ctx.fillRect(p.x,p.y,q.x-p.x,q.y-p.y);ctx.strokeStyle='#fafdf7';ctx.lineWidth=1;ctx.strokeRect(p.x,p.y,q.x-p.x,q.y-p.y);}rect(-28,-27,39.9,27,'#cddcd5');rect(-28,-9,19,9,'#afd0bd');rect(-28,0,28,36,'#e3dac4');rect(0,0,11.9,36,'#ebe6d8');for(const r of offices)rect(r.x,r.z,r.w,r.d,'#e3bac7');rect(0,29,6.9,7,'#bacfbd');for(const p of arena.players){if(p.respawn>0)continue;const a=pos(p.x,p.z);ctx.beginPath();ctx.arc(a.x,a.y,5,0,Math.PI*2);ctx.fillStyle=gameColors[p.id];ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(a.x+Math.sin(p.yaw)*11,a.y+Math.cos(p.yaw)*9);ctx.strokeStyle=gameColors[p.id];ctx.stroke();}}
-function movesFromKeys(){return [['KeyA','KeyD','KeyW','KeyS'],['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']].map(([left,right,up,down])=>{const x=Number(keys.has(right))-Number(keys.has(left)),z=Number(keys.has(down))-Number(keys.has(up));return{x:Math.cos(gameYaw)*x+Math.sin(gameYaw)*z,z:-Math.sin(gameYaw)*x+Math.cos(gameYaw)*z};});}
-function resetGame(){lastSimulationTime=performance.now();keys.clear();arena.cancelShots();arena.reset();for(const [,shot] of shots)scene.remove(shot.root);shots.clear();for(const e of waterEffects)scene.remove(e.mesh);waterEffects.length=0;document.querySelectorAll('.damageText').forEach(el=>el.remove());fullMap=false;$('wideBtn').classList.remove('active');$('wideBtn').textContent='⊞ 전체 전경';gameYaw=0;gamePitch=1.02;userZoom=20;updateActors();updateGameCamera(0,true);updateGameHUD();drawGameMap();announce('다시, 물방울 대전!','이동으로 방향을 정하고 · 공격 키를 눌렀다가 놓아 보세요.',3);}
-function setPaused(value){if(!gameReady)return;advanceSimulation(performance.now());paused=value;keys.clear();arena.cancelShots();$('pauseShade').hidden=!value||helpOpen;$('pauseBtn').textContent=value?'▶ 계속하기':'Ⅱ 일시정지';if(!value)$('world').focus();}
+const movementKeys = [
+  ['KeyA', 'KeyD', 'KeyW', 'KeyS'],
+  ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'],
+];
+const diagonalReleaseGraceMs = 120;
+const keepFacingUntil = [0, 0];
+
+function movementAxes([left, right, up, down]) {
+  return {
+    x: Number(keys.has(right)) - Number(keys.has(left)),
+    z: Number(keys.has(down)) - Number(keys.has(up)),
+  };
+}
+
+function moveForPlayer(id, now) {
+  const {x, z} = movementAxes(movementKeys[id]);
+  return {
+    x: Math.cos(gameYaw) * x + Math.sin(gameYaw) * z,
+    z: -Math.sin(gameYaw) * x + Math.cos(gameYaw) * z,
+    turn: now >= keepFacingUntil[id],
+  };
+}
+
+function movesFromKeys(now) {
+  return movementKeys.map((_, id) => moveForPlayer(id, now));
+}
+
+function changeGameKey(code, down, now) {
+  const id = movementKeys.findIndex(group => group.includes(code));
+  const previous = id >= 0 ? movementAxes(movementKeys[id]) : null;
+  if (down) keys.add(code);
+  else keys.delete(code);
+  if (id < 0) return;
+
+  const current = movementAxes(movementKeys[id]);
+  if (down || (current.x && current.z)) {
+    keepFacingUntil[id] = 0;
+  } else if (previous.x && previous.z && (current.x || current.z)) {
+    // Near-simultaneous key releases should preserve the last diagonal aim.
+    keepFacingUntil[id] = now + diagonalReleaseGraceMs;
+  }
+
+  const move = moveForPlayer(id, now);
+  if (move.turn) arena.facePlayer(arena.players[id], move.x, move.z);
+}
+
+function resetGame(){lastSimulationTime=performance.now();keys.clear();keepFacingUntil.fill(0);arena.cancelShots();arena.reset();for(const [,shot] of shots)scene.remove(shot.root);shots.clear();for(const e of waterEffects)scene.remove(e.mesh);waterEffects.length=0;document.querySelectorAll('.damageText').forEach(el=>el.remove());fullMap=false;$('wideBtn').classList.remove('active');$('wideBtn').textContent='⊞ 전체 전경';gameYaw=0;gamePitch=1.02;userZoom=20;updateActors();updateGameCamera(0,true);updateGameHUD();drawGameMap();announce('다시, 물방울 대전!','이동으로 방향을 정하고 · 공격 키를 눌렀다가 놓아 보세요.',3);}
+function setPaused(value){if(!gameReady)return;advanceSimulation(performance.now());paused=value;keys.clear();keepFacingUntil.fill(0);arena.cancelShots();$('pauseShade').hidden=!value||helpOpen;$('pauseBtn').textContent=value?'▶ 계속하기':'Ⅱ 일시정지';if(!value)$('world').focus();}
 function openGameHelp(){helpOpen=true;setPaused(true);$('pauseShade').hidden=true;$('helpShade').hidden=false;$('closeHelp').focus();}
 function closeGameHelp(){helpOpen=false;$('helpShade').hidden=true;setPaused(false);}
 function toggleWide(){fullMap=!fullMap;$('wideBtn').classList.toggle('active',fullMap);$('wideBtn').textContent=fullMap?'⊡ 두 친구 따라가기':'⊞ 전체 전경';}
 function bindGameUI(){$('resetBtn').onclick=()=>{setPaused(false);resetGame();};$('pauseResetBtn').onclick=()=>{setPaused(false);resetGame();};$('pauseBtn').onclick=()=>setPaused(!paused);$('resumeBtn').onclick=()=>setPaused(false);$('helpBtn').onclick=openGameHelp;$('closeHelp').onclick=closeGameHelp;$('helpShade').onclick=e=>{if(e.target===$('helpShade'))closeGameHelp();};$('wideBtn').onclick=toggleWide;$('soundBtn').onclick=()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'♪ 소리 켜짐':'♪ 소리 꺼짐';$('soundBtn').setAttribute('aria-pressed',String(soundOn));if(soundOn)ensureAudio();};
-const controlled=['KeyW','KeyA','KeyS','KeyD','KeyE','ArrowUp','ArrowLeft','ArrowDown','ArrowRight','Space'];window.addEventListener('keydown',e=>{if(controlled.includes(e.code))e.preventDefault();if(!gameReady)return;if(e.code==='Escape'){if(helpOpen)closeGameHelp();else setPaused(!paused);return;}if(e.code==='KeyP'&&!e.repeat){if(!helpOpen)setPaused(!paused);return;}if(helpOpen||paused)return;ensureAudio();if(e.code==='KeyR'&&!e.repeat){resetGame();return;}if(e.code==='KeyF'&&!e.repeat){toggleWide();return;}advanceSimulation(performance.now());keys.add(e.code);if(e.repeat)return;if(e.code==='KeyE')arena.press(0);if(e.code==='Space')arena.press(1);});window.addEventListener('keyup',e=>{if(controlled.includes(e.code))e.preventDefault();advanceSimulation(performance.now());keys.delete(e.code);if(!gameReady||paused)return;if(e.code==='KeyE')arena.release(0);if(e.code==='Space')arena.release(1);});window.addEventListener('blur',()=>{if(gameReady&&!helpOpen)setPaused(true);});document.addEventListener('visibilitychange',()=>{if(document.hidden&&gameReady&&!helpOpen)setPaused(true);});
+const controlled = [...movementKeys.flat(), 'KeyE', 'Space'];
+window.addEventListener('keydown', event => {
+  const {code, repeat} = event;
+  if (controlled.includes(code)) event.preventDefault();
+  if (!gameReady || repeat) return;
+  if (code === 'Escape') {
+    if (helpOpen) closeGameHelp();
+    else setPaused(!paused);
+    return;
+  }
+  if (code === 'KeyP') {
+    if (!helpOpen) setPaused(!paused);
+    return;
+  }
+  if (helpOpen || paused) return;
+  ensureAudio();
+  if (code === 'KeyR') {
+    resetGame();
+    return;
+  }
+  if (code === 'KeyF') {
+    toggleWide();
+    return;
+  }
+  if (!controlled.includes(code) || keys.has(code)) return;
+
+  const now = performance.now();
+  advanceSimulation(now);
+  changeGameKey(code, true, now);
+  if (code === 'KeyE') arena.press(0);
+  if (code === 'Space') arena.press(1);
+});
+
+window.addEventListener('keyup', event => {
+  const {code} = event;
+  if (!controlled.includes(code)) return;
+  event.preventDefault();
+  if (!gameReady || paused || !keys.has(code)) return;
+
+  const now = performance.now();
+  advanceSimulation(now);
+  changeGameKey(code, false, now);
+  if (code === 'KeyE') arena.release(0);
+  if (code === 'Space') arena.release(1);
+});
+window.addEventListener('blur', () => {
+  if (gameReady && !helpOpen) setPaused(true);
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && gameReady && !helpOpen) setPaused(true);
+});
 const canvas=renderer.domElement;canvas.addEventListener('pointerdown',e=>{if(paused)return;ensureAudio();$('world').focus();pointerDrag={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!pointerDrag||pointerDrag.id!==e.pointerId)return;gameYaw-=(e.clientX-pointerDrag.x)*.005;gamePitch=THREE.MathUtils.clamp(gamePitch+(e.clientY-pointerDrag.y)*.0035,.65,1.42);pointerDrag.x=e.clientX;pointerDrag.y=e.clientY;});for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>pointerDrag=null);canvas.addEventListener('wheel',e=>{e.preventDefault();userZoom=THREE.MathUtils.clamp(userZoom*Math.exp(e.deltaY*.001),12,85);},{passive:false});canvas.addEventListener('contextmenu',e=>e.preventDefault());window.addEventListener('resize',resizeGame);}
-function advanceSimulation(now){if(!lastSimulationTime){lastSimulationTime=now;return;}const dt=Math.min(Math.max((now-lastSimulationTime)/1000,0),.5);lastSimulationTime=now;if(paused||!gameReady||!dt)return;gameTime+=dt;const steps=Math.max(1,Math.ceil(dt/.02)),moves=movesFromKeys();for(let i=0;i<steps;i++)arena.update(dt/steps,moves);}
+function advanceSimulation(now){if(!lastSimulationTime){lastSimulationTime=now;return;}const dt=Math.min(Math.max((now-lastSimulationTime)/1000,0),.5);lastSimulationTime=now;if(paused||!gameReady||!dt)return;gameTime+=dt;const steps=Math.max(1,Math.ceil(dt/.02)),moves=movesFromKeys(now);for(let i=0;i<steps;i++)arena.update(dt/steps,moves);}
 function gameLoop(t){requestAnimationFrame(gameLoop);const dt=Math.min(gameClock.getDelta(),.3);advanceSimulation(performance.now());if(!paused){processEvents();updateActors();syncShots(dt);updateEffects(dt);}updateGameCamera(dt);positionLabels();updateGameHUD();renderer.render(scene,camera);if(t-lastMini>120){drawGameMap();lastMini=t;}}
 async function initGame(){try{await dependency('build/three.min.js');await Promise.all([loadBrand(),loadRelatedMedia()]);scene=new THREE.Scene();scene.background=new THREE.Color('#cce5ed');camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.06,260);try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});}catch{renderer=new DDCSoftwareRenderer();state.software=true;}renderer.setPixelRatio(renderer.isSoftware?1:Math.min(devicePixelRatio,1.6));renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.setClearColor('#cce5ed');$('world').appendChild(renderer.domElement);scene.add(new THREE.HemisphereLight('#fff9e7','#a0b3a0',1.2));const sun=new THREE.DirectionalLight('#fff1dc',1.05);sun.position.set(-25,45,20);scene.add(sun);low=group(scene);upper=group(scene);roof=group(scene);facade=group(scene);signs=group(scene);buildOffices();buildMain();buildOutside();upper.visible=false;roof.visible=false;facade.visible=false;if(!renderer.isSoftware)batch(low);arena=new DDCWaterArena(worldBlocked,waterLineClear);makeActor(0);makeActor(1);$('loadingText').textContent='핑크인간과 DDC가 함께 등장합니다.';await loadGameDDC();updateActors();bindGameUI();resizeGame();gameClock=new THREE.Clock();gameReady=true;lastSimulationTime=performance.now();state.ready=true;$('loading').hidden=true;updateGameHUD();drawGameMap();announce('두 친구, 준비 완료!','E / SPACE 꾹 누르기 → 원하는 순간 놓아서 물폭발!',3.6);$('world').focus();requestAnimationFrame(gameLoop);
 window.ddcWaterGame={getState:()=>({ready:gameReady,paused,software:renderer.isSoftware,players:arena.players.map(p=>({id:p.id,x:p.x,z:p.z,yaw:p.yaw,wet:p.wet,score:p.score,respawn:p.respawn,ball:p.ball?{x:p.ball.x,z:p.ball.z,age:p.ball.age}:null})),effects:waterEffects.length}),reset:resetGame};
